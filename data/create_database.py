@@ -457,4 +457,8 @@ conn.close()
 #             mysql_string += namecode + "', '" + gendercode + "', '"
 #             mysql_string += churchcode + "', '" + xrefs + "');"
 #             print mysql_string
+<<<<<<< HEAD
 #             cursor.execute(mysql_string)
+=======
+#             cursor.execute(mysql_string)
+>>>>>>> 8dbdbc8805864e9662b3735bb8713727837dc532

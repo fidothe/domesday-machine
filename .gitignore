@@ -1,3 +1,5 @@
 localsettings.py
 /data
 /media/images
+/media/fonts
+/domes/management/commands/

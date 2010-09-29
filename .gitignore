@@ -1,5 +1,11 @@
 localsettings.py
-/data
+/data/new_data
+/data/original_data
+/data/cropped
+/data/archive
 /media/images
 /media/fonts
 /domes/management/commands/
+/media/js/places_all.json
+.gitignore
+.gitignore~

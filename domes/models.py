@@ -224,8 +224,8 @@ class TrwOwners(models.Model):
 class Name(models.Model):
     namesidx = models.IntegerField(primary_key=True, verbose_name="ID") # these map to LordIdx etc
     name = models.CharField(max_length=100, null=True, blank=True, verbose_name="Name")     
-    county = models.CharField(max_length=5, null=True, blank=True, verbose_name="County")   
-    phillimore = models.CharField(max_length=100, null=True, blank=True, verbose_name="Phillimore")         
+    county = models.CharField(max_length=36, null=True, blank=True, verbose_name="County")   
+    phillimore = models.CharField(max_length=1000, null=True, blank=True, verbose_name="Phillimore")         
     namecode = models.CharField(max_length=5, null=True, blank=True, verbose_name="Name code")  
     gendercode = models.CharField(max_length=5, null=True, blank=True, verbose_name="Gender code")  
     churchcode = models.CharField(max_length=5, null=True, blank=True, verbose_name="Church code")  
@@ -244,7 +244,7 @@ class ChurchCode(models.Model):
 
 class Image(models.Model):
     structidx = models.IntegerField() 
-    county = models.CharField(max_length=5, null=True, blank=True)   
+    county = models.CharField(max_length=36, null=True, blank=True)   
     phillimore = models.CharField(max_length=100, null=True, blank=True)         
     imagesub = models.CharField(max_length=30, null=True, blank=True)  
     image = models.CharField(max_length=30, null=True, blank=True) #filename

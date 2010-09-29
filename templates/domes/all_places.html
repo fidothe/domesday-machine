@@ -1,0 +1,88 @@
+{% extends "domes/base.html" %}
+
+{% block title %}Places{% endblock %}
+{% block description %}All places listed in the Domesday Book{% endblock %}
+{% block nav-class %}nav-places{% endblock %}
+
+{% block content %}
+
+<div class="page_title">
+<h1>Places</h1>
+</div>
+
+<div class="content">
+
+<p>Hopefully this will get more useful soon.</p>
+
+	<!-- <div class="page_tabs">
+        <ul>
+            <li{% ifequal selected_tab "county" %} class="selected"{% endifequal %}>
+                <a href="#">County</a>
+            </li>
+            <li{% ifequal selected_tab "atoz" %} class="selected"{% endifequal %}>
+                <a href="#">A-Z</a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="page_tab_body">
+        {% block tab %}
+        {% endblock %}
+    </div> -->
+
+<!-- county tab 
+
+<form type="get" action="">
+	<select name="county">
+		{% for county in county_list %}
+	     <option value="{{ county.name }}">{{ county.name }}</option>
+		{% endfor %}
+	</select>
+	<input type="submit" id="submit" value="Go">
+</form>-->
+
+<!-- A-Z tab -->
+	<div class="atozContainer"> 
+			<ul class="atoz"> 
+				<li ><a href="?indexChar=A">A</a></li> 
+				<li ><a href="?indexChar=B">B</a></li> 
+				<li ><a href="?indexChar=C">C</a></li> 
+				<li ><a href="?indexChar=D">D</a></li> 
+				<li ><a href="?indexChar=E">E</a></li>
+				<li ><a href="?indexChar=F">F</a></li> 
+				<li ><a href="?indexChar=G">G</a></li> 
+				<li ><a href="?indexChar=H">H</a></li> 
+				<li ><a href="?indexChar=I">I</a></li> 
+				<li ><a href="?indexChar=J">J</a></li> 
+				<li ><a href="?indexChar=L">L</a></li> 
+				<li ><a href="?indexChar=M">M</a></li> 
+				<li ><a href="?indexChar=N">N</a></li> 
+				<li ><a href="?indexChar=O">O</a></li>
+				<li ><a href="?indexChar=P">P</a></li> 
+				<li ><a href="?indexChar=Q">Q</a></li> 
+				<li ><a href="?indexChar=R">R</a></li> 
+				<li ><a href="?indexChar=S">S</a></li> 
+				<li ><a href="?indexChar=T">T</a></li> 
+				<li ><a href="?indexChar=U">U</a></li> 
+				<li ><a href="?indexChar=V">V</a></li> 									
+				<li ><a href="?indexChar=W">W</a></li> 
+				<li ><a href="?indexChar=Y">Y</a></li> 
+				<li ><a href="?indexChar=Z">Z</a></li> 
+		</ul> 
+	</div>
+<div style="clear: both;"></div>
+
+<ul>
+{% for place in places %}
+<li><a href="{% url place place.grid place.vill_slug %}">{{ place.vill }}</a>, 
+<a href="{% url county place.county %}">{{ place.county }}</a></li>
+{% endfor %}
+</ul>
+
+</div>
+<div style="clear: both;"></div>
+{% endblock %}
+
+
+
+

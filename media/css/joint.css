@@ -1,0 +1,287 @@
+/**********************************************
+/ CSS - heavily influenced by DiveIntoHtml5.org
+/********************************************/
+
+/********************************* 
+/ Font face definitions
+/********************************/
+
+@font-face {
+	font-family: 'Essays 1743';
+	font-weight: normal;
+	font-style: normal;
+	src: url('../fonts/essays1743-min.eot');
+	src: local('Essays 1743'),url('../fonts/essays1743-min.ttf');
+}
+      
+@font-face {
+	font-family: 'Linux Libertine';
+	font-weight: normal;
+	font-style: normal;
+	src: url('../fonts/lin-libertine-min.eot');
+	src: local('Linux Libertine'),url('../fonts/lin-libertine-min.ttf');
+}
+
+/*********************************
+/ Style resets
+/********************************/
+
+/* Resets */
+h1, h2, h3, h4, h5, h6 {padding:0; margin:0; clear:both;}
+h4 { padding: 0.5em 0 0.5em 0;}
+img {border:none;}
+
+/*********************************
+/ Body properties
+/********************************/
+
+body {text-align:center; padding:0; margin:0; font-family:helvetica, arial, sans-serif;
+	  font: large/1.556 'Linux Libertine',Palatino,'Palatino Linotype','Book Antiqua',Georgia,'Times New Roman',serif;
+	  word-spacing: .1em; font-size: 1.1em;}
+
+/*********************************
+/ Page banner
+/********************************/
+div.banner {background:#ffffd7; font-size:0.9em; padding:0.4em 0; border-bottom:solid 1px #9f9f9f; }
+div.banner a {font-weight:bold;}
+
+/*********************************
+/ Header and nav menu
+/********************************/
+#divHeader {border-bottom:solid 1px #9f9f9f; padding:0 3% 0 3%; margin-bottom:0.8em; width:94%; min-width: 900px; min-height: 100px;
+    position:relative; background:url(../images/header_background.png) repeat-x bottom left;}
+#divLogo p a {position:absolute; top:-7px; left:3%; text-align:left;
+	font-family: 'Essays 1743','Linux Libertine',Palatino,'Palatino Linotype','Book Antiqua',Georgia,'Times New Roman',serif;
+	font-weight: 500; text-transform: uppercase; font-size: 3em; text-decoration:none; color: black; 	
+	}
+#divLogo #subtitle {position:absolute; top:68px; left:3%; text-align:left;
+	font-size: 0.9em; text-decoration:none; color: black; 	
+	}
+#logo_image { margin-right: 0.3em; height: 45px; width: 45px;}  
+#divMenu {position:absolute; top:-7px; right:1.5%; text-align:right; }
+#divMenu ul li {padding:0.3em 0.3em; list-style-type:none; display:inline; 
+    font-size:1.1em; margin-right:0.3em;font-weight:bold;}
+#divMenu ul li.last {border:none;padding-right:0;margin-right:4px;}  
+
+#nav-map #nav-map a,
+#nav-people #nav-people a,
+#nav-places #nav-places a,
+#nav-translate #nav-translate a,
+#nav-about #nav-about a,
+#nav-contact #nav-contact a,
+#nav-help #nav-help a,
+#navigation ul li a:hover
+{
+	color: black;
+}
+#search_form {
+	position:absolute;
+	top:68px; 
+	right:10px;
+	float: right; 
+
+}
+
+/**********************************
+/ Main content of page
+/********************************/
+#divContent {padding-bottom:3em; font-size:0.9em;}
+.content {padding-top:0.1em;}
+.content.left, .content.right {float:left;}
+.content.half {width:50%;}
+.content.col.left {width:50%;}
+.content.col.right {width:47%; padding-left:3%;}
+.content .section {padding-bottom:1em;}
+#divPage { width:94%; min-width: 900px; text-align:left; margin:0 auto; position:relative;}
+
+/**********************************
+/ Page titles
+/********************************/
+div.page_title {border-bottom:dotted 1px #ccc; padding-bottom:0.3em;margin-bottom: 1em;}
+
+/**********************************
+/ Home page
+/********************************/
+div #homepage_search {border-bottom:dotted 1px #ccc; padding-bottom:1em;}
+div #homepage_form {width:97%;background-color: aliceblue; padding:1em 1em 1em 1em;}
+div #homepage_place {padding-top:1em;}
+div #homepage_place p.header {font-family: 'Essays 1743','Linux Libertine',Palatino,'Palatino Linotype','Book Antiqua',Georgia,'Times New Roman',serif; }
+div #homepage_place p.header {font-weight: normal; text-transform: uppercase; text-shadow: 0 0 1px #667; }
+
+/**********************************
+/ Errors etc
+/********************************/
+#divErrors ul {padding:0; margin:0; list-style-type:none; line-height:1.4em;}
+#divErrors ul li {background:#da9da4; padding:0.1em 0; margin:0; text-align:center;}
+.error input, .error select {border:solid 1px #da9da4;}
+small.error_hint {color:#cc0000;}
+.http_error {text-align:center; padding-top:1em;}
+
+/**********************************
+/ Footer
+/********************************/
+#divFooter {text-align:left; position:relative;border-top:solid 1px #9f9f9f; padding-bottom: 0.5em;
+        bottom:0; left:0;min-height:105px; clear:left; width:100%; font-size:0.9em; background:#e7f5ff url(../images/footer_background.png) repeat-x top left;}
+#divFooter a {color:#000;}        
+#divFooter dl {padding: 1em 150px 0.5em 3%;}
+#divFooter dl dt {float:left; width:9em; color:#616161;clear:left;font-weight:bold; 
+    padding:0 0 0.5em 0; margin:0; color:#000;}
+#divFooter dl dd {float:left; padding:0; margin:0;}
+#divFooter dl dd ul {padding:0;margin:0;}
+#divFooter dl dd ul li {padding:0 0.8em 0 0; display:inline;list-style-type:none;}
+#divFooter #divCopyright {padding-top:1em; clear:left; padding-left:3%; color:#808080;}
+#divFooter #divCopyright a {color:#808080;} 
+
+div.comments {border-top:dotted 1px #ccc; padding-top:0.3em;}
+
+/**********************************
+/ ELEMENT STYLING
+/**********************************
+
+/**********************************
+/ Headers
+/********************************/
+
+h1,h2,h4 {
+	font-family: 'Essays 1743','Linux Libertine',Palatino,'Palatino Linotype','Book Antiqua',Georgia,'Times New Roman',serif;
+	font-weight: normal; text-transform: uppercase; text-shadow: 0 0 1px #667;
+}
+
+/**********************************
+/ Link styles
+/********************************/
+a {color:#2680c6; text-decoration:none;}
+a:hover {text-decoration:underline;}
+span.faux_link {color:#ccc;}
+
+/**********************************
+/ Tooltips
+/********************************/
+a.info{
+    position:relative; /*this is the key*/
+    z-index:24; 
+    /* background-color:#ccc; */
+    color:red;
+    text-decoration:none}
+
+a.info:hover{z-index:25; /*background-color:#ff0 */}
+
+a.info span{display: none}
+
+a.info:hover span{ /*the span will display just on :hover state*/
+    display:block;
+    position:absolute;
+    top:2em; left:2em; width:15em;
+    border:1px solid #0cf;
+    background-color:#cff; color:#000;
+    text-align: center}
+
+/**********************************
+/ Tables
+/********************************/
+table {border-collapse:collapse; padding: 2px;}
+thead {background:#ffffd7;}
+table.tablesorter tr:nth-child(odd) td {background:#F0F0F0;}
+table.tablesorter td {border-bottom:dotted 1px #ccc; border-top:solid 1px #ffffd7;padding:0.3em 0.5em; line-height:1.2em;}
+table.tablesorter tr:hover td {border-bottom:solid 1px #ccc;border-top:solid 1px #ccc;}
+table.tablesorter { background-color: #CDCDCD; margin:10px 0pt 15px; text-align: left; }
+table.tablesorter thead tr th, table.tablesorter tfoot tr th { background-color: #e7f5ff; border: 1px solid #FFF; padding: 4px; }
+table.tablesorter thead tr .header { background-image: url(../images/bg.gif); background-repeat: no-repeat; background-position: center right; cursor: pointer; }
+table.tablesorter tbody td { color: #3D3D3D; padding: 4px; background-color: #FFF; vertical-align: top; }
+table.tablesorter tbody tr.odd td { background-color:#F0F0F6; }
+table.tablesorter thead tr .headerSortUp { background-image: url(../images/asc.gif); }
+table.tablesorter thead tr .headerSortDown { background-image: url(../images/desc.gif); }
+table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSortUp { background-color: #8dbdd8; }
+
+/**********************************
+/ Clear/hide/highlight (used wherever needed)
+/********************************/
+br.clear {clear:both;}
+.hide {display:none;}
+span.highlight {background:#ffffaa; padding:0 0.4em;}
+
+/**********************************
+/ Forms
+/********************************/
+ul.form {padding:0; margin:0;}
+ul.form li {padding:0; margin:0; list-style-type:none;}
+ul.form li label {display:block; float:left; width:10em;}
+fieldset {padding:0; margin:0; border:none;}
+input.button {font-size:1em;
+    -webkit-border-radius: 4px;-moz-border-radius: 4px; 
+    background-color:#6fb1e6; color:#fff;
+        padding:0.4em 0.6em 0.4em 0.6em;border:solid 1px #2680c6;font-weight:bold; text-transform:uppercase;}
+input.button:active {color:#2680c6;}
+
+/**********************************
+/ General list styles
+/********************************/
+ul {padding-left:0;}
+ul li {padding:0 0 0.5em 0; margin-left:0;list-style-type:none;}
+
+/* Scroll */
+div.scroll {overflow-y:scroll; border:solid 1px #ccc; padding:0.5em;}
+
+/* Welcome page */
+#divWelcome {position:relative; top:-2em;}
+#divWelcomeText p {font-size:1.6em; font-weight:bold;}
+
+/**********************************
+/ Comments - add and display
+/********************************/
+form.add_comment {position:relative; padding-left:50px; border:solid 1px #808080; padding:8px;
+    min-height:40px; margin-bottom:2em;}
+form.add_comment img {float:left; margin-right:10px;}
+form.add_comment div {position:relative;}
+form.add_comment textarea {width:85%; height:38px;}
+form.add_comment input.button {float:right;}
+div.user_comment {border-bottom:dotted 1px #808080; padding-bottom:1em; margin-bottom:1em; min-height: 50px; width: 100%;}
+div.user_comment img {float:left; margin-right:10px;}
+
+/**********************************
+/ Domesday Book entries on place pages
+/********************************/
+.domesday_entry {border-bottom:dotted 1px #808080; border-top:dotted 1px #808080; padding:0.5em 0 0.5em 0; margin-bottom:1em; min-height: 50px; width: 100%;}
+
+
+/* A-Z container */
+.atozContainer {border:1px solid #e0e0e0; background:#f2f1ef; width:80%; float:left; margin:10px 0 10px 0; padding:10px 10px 10px 10px} 
+ul.atoz {background:#fff; border:1px solid #e0e0e0; list-style:none; margin:0; padding:4px 4px 4px 4px; float:left; width:97%}
+ul.atoz li {background:#fff; float:left; margin:0; height:1.5em; width:1.6em; text-align:center; border:1px solid #fff;font-weight:bold}
+ul.atoz a {background:none; padding:0; border:1px solid #fff}
+ul.atoz li.activeLink {border-color:#fff; font-weight:bold; width:1.7em}
+ul.atoz li.activeLink a {color:#fff; background:#ff5b00;border:1px solid #ff5b00}
+ul.atoz li a:hover {color:#fff;border:1px solid #ff5b00;background:#ff5b00;text-decoration:none}
+.atoz div.subContent {padding-bottom:10px}
+.atoz div.subContent p {padding:0 0 5px 0}
+
+/**********************************
+/ Nice rounded corners
+/********************************/
+.translate-box  {
+	width: 350px; 
+	min-width: 350px;
+	background: #e7f5ff url(top-left.gif) left top no-repeat;
+	padding: 0.5em 2em;
+	margin-bottom: 1em;
+	background-image: none;
+	-moz-border-radius: 1.1em;
+	-webkit-border-radius: 1.1em;
+	border-radius: 1.1em;
+	text-decoration: none;
+	color: black; 
+}
+
+.translate-box-mouseover {
+	width: 350px; 
+	min-width: 350px;
+	background: lemonchiffon url(top-left.gif) left top no-repeat;
+	padding: 0.5em 2em;
+	margin-bottom: 1em;
+	background-image: none;
+	-moz-border-radius: 1.1em;
+	-webkit-border-radius: 1.1em;
+	border-radius: 1.1em;
+	text-decoration: none;
+	color: black;
+}

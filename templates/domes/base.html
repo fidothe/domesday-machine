@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	<meta charset="utf-8" />
+	<title>{% block title %}{% endblock %} | Domesday Map</title>
+	<meta name="description" content="{% block description %}{% endblock %}" />
+	<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+	<link rel="stylesheet" href="{{ MEDIA_URL }}css/joint.css" />
+	{% if has_map %}
+    <script src="http://maps.google.com/maps/api/js?sensor=false&amp;region=GB&amp;key={{ MAPS_API_KEY }}" type="text/javascript"></script>
+	<script type="text/javascript" src="{{ MEDIA_URL }}js/markerclusterer.js"></script>           		                                
+	<script type="text/javascript" src="{{ MEDIA_URL }}js/domesday.js"></script>
+	{% endif %}
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+	{% if has_image %}
+    <script type="text/javascript" src="{{ MEDIA_URL }}js/thickbox.js"></script>
+    <link rel="stylesheet" href="{{ MEDIA_URL }}css/thickbox.css" type="text/css" media="screen" />
+	{% endif %}
+    <script>
+	$(function() {
+		$("#geo").autocomplete({
+			source: '/all_places_json',
+			minLength: 4
+		});
+	});
+    </script>
+    </head>
+
+	<body id="{% block nav-class %}{% endblock %}">
+
+	<!-- banner -->
+	<div class="banner">If you would like to help translate the Domesday Book, please <a href="{% url translate %}">get in touch</a>
+	</div>
+	<!-- header -->
+	<header>
+	<div id="divHeader"> 
+	<div id="divLogo">
+	<p><a href="{% url home %}" title="Home">
+	<img id="logo_image" src="{{ MEDIA_URL }}images/lion1.gif" alt="Medieval lion logo" width=50 height=50>Domesday Map</a></p>
+	<span id="subtitle">The first online copy of Domesday Book of 1086</span>
+	</div>
+	<!-- main navigation menu -->
+	<div id="divMenu">
+	<ul>
+	<li id="nav-places"><a href="{% url all_places %}">Places</a></li>❧
+	<li id="nav-translate"><a href="{% url translate %}">Translate</a></li>❧
+	<li id="nav-about"><a href="{% url about %}">About</a></li>❧
+	<li id="nav-contact"><a href="/contact">Contact</a></li>
+	</ul>
+	{% if not no_search_form %}
+	<!-- search form -->
+	<form name="f" action="/search/" method="get" id="search_form">
+	<small>
+	<label for="location">Find Domesday places near:&nbsp;</label>
+	<input type="search" id="geo" name="geo" size="20" autofocus />
+	  <script>
+	    if (!("autofocus" in document.createElement("input"))) {
+	      document.getElementById("geo").focus();
+	    }
+	  </script>
+	<input type="submit" value="Go"> 
+	</small>
+	</form>
+
+	{% endif %}
+	</div>
+
+    </div>
+
+	</header>
+
+    <!-- body of page -->
+	<div id="divPage">
+
+	<div id="divErrors">		    
+	</div>
+
+	<div id="divContent">
+	{% block content %}{% endblock %}
+    </div>
+	</div>	
+
+	<!-- footer -->
+	<footer>
+	<div id="divFooter">
+	<div id="divCopyright">
+	Site by Anna Powell-Smith. Domesday data <a href="/about#data">created by Professor John Palmer, University of Hull</a>.
+	</div>
+	</div>
+	</footer>
+
+	</body>
+</html>

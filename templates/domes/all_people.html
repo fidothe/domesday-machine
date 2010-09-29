@@ -1,0 +1,61 @@
+{% extends "domes/base.html" %}
+
+{% block title %}People{% endblock %}
+{% block nav-class %}nav-people{% endblock %}
+
+{% block content %}
+
+<div class="page_title">
+<h1>People</h1>
+</div>
+
+<div class="content">
+
+<p>Hopefully this will get more useful soon.</p>
+
+	<!-- A-Z tab -->
+		<div class="atozContainer"> 
+				<ul class="atoz"> 
+					<li ><a href="?indexChar=A">A</a></li> 
+					<li ><a href="?indexChar=B">B</a></li> 
+					<li ><a href="?indexChar=C">C</a></li> 
+					<li ><a href="?indexChar=D">D</a></li> 
+					<li ><a href="?indexChar=E">E</a></li>
+					<li ><a href="?indexChar=F">F</a></li> 
+					<li ><a href="?indexChar=G">G</a></li> 
+					<li ><a href="?indexChar=H">H</a></li> 
+					<li ><a href="?indexChar=I">I</a></li> 
+					<li ><a href="?indexChar=J">J</a></li> 
+					<li ><a href="?indexChar=L">L</a></li> 
+					<li ><a href="?indexChar=M">M</a></li> 
+					<li ><a href="?indexChar=N">N</a></li> 
+					<li ><a href="?indexChar=O">O</a></li>
+					<li ><a href="?indexChar=P">P</a></li> 
+					<li ><a href="?indexChar=Q">Q</a></li> 
+					<li ><a href="?indexChar=R">R</a></li> 
+					<li ><a href="?indexChar=S">S</a></li> 
+					<li ><a href="?indexChar=T">T</a></li> 
+					<li ><a href="?indexChar=U">U</a></li> 
+					<li ><a href="?indexChar=V">V</a></li> 									
+					<li ><a href="?indexChar=W">W</a></li> 
+					<li ><a href="?indexChar=Y">Y</a></li> 
+					<li ><a href="?indexChar=Z">Z</a></li> 
+			</ul> 
+		</div>
+	<div style="clear: both;"></div>
+	
+	
+	<ul>
+	{% for person in people %}
+	<li><a href="{% url person person.name %}"/>{{ person.name }}</a>, {{ person.gendercode }}</li>
+	{% endfor %}
+	</ul>
+
+
+</div>
+<div style="clear: both;"></div>
+{% endblock %}
+
+
+
+

@@ -1,0 +1,22 @@
+{% extends "domes/base.html" %}
+
+{% block title %}Counties{% endblock %}
+
+{% block content %}
+<div class="page_title">
+<h1>Counties</h1>
+</div>
+
+<div class="content">
+
+<ul style="list-style-type: none;">
+{% for county in counties %}
+<li><a href="{% url county county.name %}">{{ county.name }}</a> ({{ county.places.count}} places)</li>
+{% endfor %}
+</ul>
+
+</div>
+
+<div style="clear: both;"></div>
+
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "domes/base.html" %}
+{% block nav-class %}nav-translate{% endblock %}
+{% block title %}Translate{% endblock %}
+
+{% block content %}
+<div class="page_title">
+<h1>Translate</h1>
+</div>
+
+<div class="content">
+
+<span style="float: right; min-width: 14em; background-color: aliceblue; padding: 0.5em; margin: 0.5em;">
+<p><strong>Help us translate Domesday Book!</strong></p>
+<p>Can you translate the entries for your area?<br/>Please let us know:</p>
+<form method="post" action="" id="contact_form">
+{% csrf_token %}
+<p>Name*: <input type="email" size="40" /></p>
+<p>Email*: <input type="email" size="40" /></p>
+<p>Message: <input type="email" size="40" /></p>
+<input type="submit" value="Send your details">
+</form>
+</span>
+
+<p>A full English text of Domesday Book has never been made available online,
+ because all existing translations are subject to copyright.</p>
+
+<p>We would like to create a freely available, crowdsourced translation of Domesday Book, using the Latin text and the existing free data. It's going to be open source, and it's going to be great!</p>
+
+<p> We're currently building a crowdsourcing interface. If you would like to translate the text when it is available, or if you have the 
+technical skills to help build the interface, please <strong>sign up</strong>!</p>
+
+<p><strong>Example entry - Hayes, Middlesex</strong></p>
+
+
+<p>We have three kinds of data to use for the translation: 
+
+<ol>
+<li>the Latin text, heavily encoded</li>
+<li>summary statistics in English</li>
+<li>high-quality images of the Domesday Book manuscript</li>
+</ol>
+
+<p>Here's an example of these for Hayes, in Middlesex.</p>
+
+<p><strong>Latin text:</strong> Archiep1s Lanfranc9 tenet HESA
+p8 .LVIIII. hidis. T1ra .e0 .XL. carucar0. Ad dn0iu0 p2tin0
+.XII. hide. 7 ibi funt .II. carucae. Int1 franc1 7 uill0os.
+funt .XXVI. car1. 7 adhuc XII. poffent .e1e1.
+Ibi pb0r ht0 .I. hid1. 7 III. milites .VI. hid1 7 dim1. 7 II. uill0i
+II. hid1. 7 XII. uill0i q^i^fq6 dimid0 hida0. 7 XX. uill0i. q^i^fq6
+.I. uirg1 t1re. 7 XL. uill0i. q^i^fq6 dim1 uirg1. 7 XVI. bord0
+de .II. hid0. Ibi funt .XII. cot1. 7 II. ferui. Ibi .I. molin0
+IIII. fol0. 7 p^a^tu0 .I. c1. [...] Paftura ad pecunia0
+uillae. Silua .CCCC. porc1. 7 III. folid0.
+$In totis ualentijs ualet .XXX. lib0. 7 q2do recep0 .XII. lib0.
+T.R.E .XL. lib0. Hoc Maneriu0 tenuit Stigand9 arch0.
+<strong>[numbers have been used to represent the symbols used by the Domesday scribe in our Latin transcription, so the text needs some work before it is useful, hence the delay]</strong></p>
+
+<p><strong>Statistics:</strong> Hundred: Elthorne. County: Middlesex. Taxable value 59 geld. Value in 1086 £30. Value in 1066 £40. Value c. 1070 £12. Payments of 0.15 "meadow, pasture, woodland".
+74 villagers. 16 smallholders. 2 slaves. 1 priest. 12 cottagers. 3 miscellaneous population (category: men-at-arms).
+Land for 40 ploughlands. 2 lord's plough teams. 26 men's plough teams. 12 possible men's plough teams. 12 lord's lands. 1 meadow. 400 woodland. 1 church lands.</p>
+
+<p><strong>Image:</strong> from the 'Middlesex' section of Domesday Book, showing the original Latin.</p>
+
+<p><img style=" margin-left: 0.5em;" src="{{MEDIA_URL}}images/hayes.jpg" width="693" height="600" /></p>
+
+</div>
+<div style="clear: both;"></div>
+
+{% endblock %}

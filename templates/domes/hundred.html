@@ -1,0 +1,67 @@
+{% extends "domes/base.html" %}
+
+{% block title %}Hundred of {{ hundred_name }}{% endblock %}
+{% block description %}The hundred of {{ hundred_name }} in the Domesday Book{% endblock %}
+{% block nav-class %}nav-places{% endblock %}
+{% block content %}
+
+<div class="page_title">
+<h1>Hundred: {{ hundred_name }}</h1>
+</div>
+
+<div class="content">
+
+<div id="map_canvas" style="width: 50%; height: 400px; float: right;"></div>
+
+<script type="text/javascript" src="{{ MEDIA_URL }}js/jquery.js" ></script> 
+<script type="text/javascript" src="{{ MEDIA_URL }}js/tablesorter.js" ></script>
+
+<script type="text/javascript">
+$(function() 
+    { 
+        $("#statsTable").tablesorter({ 
+		        headers: { 0: { sorter:'text' } , 
+		                   1: { sorter:'text' } ,
+		                   2: { sorter:'digit' } 
+		                 } , 
+		         sortList: [[2,1]] 
+		    });
+    } 
+);
+</script>
+
+<p>Places in the hundred of <strong>{{ hundred_name.upper }}</strong> in the Domesday Book.</p>
+
+<!-- <div id="map_canvas" style="width: 100%; height: 600px"></div> -->
+
+<table id="statsTable" class="tablesorter" style="width:50%;">
+<thead><tr><th>Name</th><th>County</th><th>Value</th></tr></thead>
+<tbody>
+{% for place in places %}
+<tr>
+<td><a href="/place/{{place.grid}}/{{ place.vill }}">{{ place.vill }}</a></td><td><a href="{% url county place.county %}">{{ place.county }}</a></td><td>{{ place.holding }} {{ place.units }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<div style="clear: both;"></div>
+
+<script type="text/javascript">
+
+var places = [];
+
+{% for place in places_with_grid %}
+var temp_array = ['{{place.lat}}', '{{place.lon}}', '{{place.vill}}', '{{place.grid}}', '{{place.county}}'];
+places.push(temp_array);
+{% endfor %}
+
+{% for place in places_with_grid %}
+{% if forloop.first %}
+window.onload = load_page('{{place.lat}}', '{{place.lon}}', 9, places);
+{% endif %}
+{% endfor %}
+
+</script>
+
+{% endblock %}

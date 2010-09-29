@@ -1,0 +1,182 @@
+{% extends "domes/base.html" %}
+
+{% block title %}Home {% endblock %}
+{% block description %}Complete map of the Domesday Book of 1086{% endblock %}
+
+{% block content %}
+
+<div class="content">
+
+<div id="homepage_search">
+
+<form id="homepage_form" name="f" action="/search/" method="get" style="float: left; ">
+<label>Type in a town or postcode (e.g. Cambridge, SW1A 1AA) to find Domesday places:&nbsp;</label>
+<input type="search" id="geo" name="geo" size="40" autofocus />
+  <script>
+    if (!("autofocus" in document.createElement("input"))) {
+      document.getElementById("geo").focus();
+    }
+  </script>
+	&nbsp; 
+<input type="submit" value="Search"> 
+
+</form>
+
+<div style="clear: both;"></div>
+</div> 
+
+<div id="homepage_place">
+
+<!-- <p>A project to translate Domesday Book, the great survey of England from 1086.</p>
+
+
+<table cellpadding="2em" cellspacing="2em" width="100%">
+<tr>
+<td width="33%" valign="top">
+<h3>What is all this about?</h3>
+</td>
+<td width="33%" valign="top">
+<h3>Recent translations</h3>
+&raquo; Help us translate the text
+</td>
+<td width="33%" valign="top">
+<h3>Recent forum posts</h3>
+&raquo; Join the forums
+</td>
+</tr>
+</table> -->
+
+
+
+
+<div id="map_canvas" style="width: 40%; height: 400px; float: right; margin-left: 10px;"></div>
+
+<p class="header">RANDOM ENTRY: <a href="/place/{{ place.grid }}/{{ place.vill }}">{{ place.vill.upper }}</a>, {{ place.county.upper }}</p>
+
+<ul>
+
+{% if has_image %}
+<a href="{{ MEDIA_URL }}images/cropped/{{ place.structidx }}.png" class="thickbox" rel="gallery-domesday">
+<img width="400px" height="100px" src="{{ MEDIA_URL }}images/cropped/{{ place.structidx }}_thumb.png" title="" />
+</a>
+{% else %}
+<p>Image coming soon!</p>
+{% endif %}
+
+<a href="{% url translate %}">
+<div class="translate-box" onmouseover="className='translate-box-mouseover';" 
+onmouseout="className='translate-box';">
+<p>Help us translate this entry!</p>
+</div>
+</a>
+
+<li><strong>Hundred: </strong><a href="{% url hundred place.hundred %}">{{ place.hundred }}</a></li>
+{% if place.area %}<li><strong>Area: </strong>{{ place.area }}</li>{% endif %}
+<li><strong>County: </strong> <a href="{% url county place.county %}">{{ place.county }}</a></li>
+<li><strong>Value: </strong>
+{% if manor.geld %}Taxable value {{ manor.geld }} {{manor.gcode}}. {% endif %}
+{% if manor.value86 %}Value in 1086 £{{ manor.value86 }}. {% endif %}
+{% if manor.value66 %}Value in 1066 £{{ manor.value66 }}. {% endif %}
+{% if manor.valueqr %}Value c. 1070 £{{ manor.valueqr }}. {% endif %}
+{%comment %}this needs sorting...{% if manor.value_string %}<li>Value string: {{ manor.value_string }}</li>{% endif %}{%endcomment%}
+{% if manor.villtax %}{{ manor.villtax }} villtax. {% endif %}
+{% if manor.taxedon %}Taxed on {{ manor.taxedon }}. {% endif %}
+{% if manor.payments %}Payments of {{ manor.payments }}{% if manor.paymentsunits %} {{ manor.paymentsunits }}{% endif %}. {% endif %}
+</li>
+<li><strong>People: </strong>
+{% if manor.headofmanor %}Head of manor is {{ manor.headofmanor }}. {% endif %}
+{% if manor.villagers %}{{ manor.villagers }} villager{{ manor.villagers|pluralize }}. {% endif %}
+{% if manor.smallholders %}{{ manor.smallholders }} smallholder{{ manor.smallholders|pluralize }}. {% endif %}
+{% if manor.slaves %}{{ manor.slaves }} slave{{ manor.slaves|pluralize }}. {% endif %}
+{% if manor.femaleslaves %}{{ manor.femaleslaves }} female slave{{ manor.femaleslaves|pluralize }}. {% endif %}
+{% if manor.freemen %}{{ manor.freemen }} freemen. {% endif %}
+{% if manor.free2men %}{{ manor.free2men }} free men. {% endif %}
+{% if manor.priests %}{{ manor.priests }} priest{{ manor.priests|pluralize }}. {% endif %}
+{% if manor.cottagers %}{{ manor.cottagers }} cottager{{ manor.cottagers|pluralize }}. {% endif %}
+{% if manor.otherpop %}{{ manor.otherpop }} other population. {% endif %}
+{% if manor.miscpop %}{{ manor.miscpop }} miscellaneous population {% if manor.miscpopcategories %}(category: {{ manor.miscpopcategories }}){% endif %}. {% endif %}
+{% if manor.burgesses %}{{ manor.burgesses }} burgess{{ manor.burgesses|pluralize:",es" }}. {% endif %}
+</li>
+<li><strong>Ploughland:</strong>
+{% if manor.ploughlands %}{{ manor.ploughlands }} ploughlands (code: {{manor.pcode}}). {% endif %}
+{% if manor.lordsploughs %}{{ manor.lordsploughs }} lord's plough teams. {% endif %}
+{% if manor.mensploughs %}{{ manor.mensploughs }} men's plough teams. {% endif %}
+</li>
+<li><strong>Other land: </strong>
+{% if manor.lordsland %}{{ manor.lordsland }} lord's lands. {% endif %}
+{% if manor.newland %}{{ manor.newland }} new lands. {% endif %}
+{% if manor.meadow %}{{ manor.meadow }} {{manor.meadowunits}} meadow. {% endif %}
+{% if manor.pasture %}{{ manor.pasture }} {{manor.pastureunits}} pasture. {% endif %}
+{% if manor.woodland %}{{ manor.woodland }} {{manor.woodlandunits}} woodland. {% endif %}
+{% if manor.fisheries %}{{ manor.fisheries }} fisher{{ manor.fisheries|pluralize:"y,ies" }}. {% endif %}
+{% if manor.salthouses %}{{ manor.salthouses }} salthous{{ manor.salthouses|pluralize:"e,es" }}. </li>{% endif %}
+{% if manor.churches %}{{ manor.churches }} church{{ manor.churches|pluralize:",es" }}. {% endif %}
+{% if manor.churchland %}{{ manor.churchland }} church lands. {% endif %}
+</li>
+
+{% if livestock %}
+	<li><strong>Livestock in 1066: </strong>
+	{% if livestock.cobs_1066 %}{{livestock.cobs_1066 }} cobs. {% endif %}
+	{% if livestock.cattle_1066 %}{{livestock.cattle_1066 }} cattle. {% endif %}
+	{% if livestock.cows_1066 %}{{livestock.cows_1066 }} cows. {% endif %}
+	{% if livestock.pigs_1066 %}{{livestock.pigs_1066 }} pigs. {% endif %}
+	{% if livestock.sheep_1066 %}{{livestock.sheep_1066 }} sheep. {% endif %}
+	{% if livestock.goats_1066 %}{{livestock.goats_1066 }} goats. {% endif %}
+	{% if livestock.beehives_1066 %}{{livestock.beehives_1066 }} beehives. {% endif %}
+	{% if livestock.wild_mares_1066 %}{{livestock.wild_mares_1066 }} wild mares. {% endif %}
+	{% if livestock.other_1066 %}{{livestock.other_1066 }} {{livestock.other_codes_1066 }}. {% endif %}
+	</li>
+	<li><strong>Livestock in 1086: </strong>
+	{% if livestock.cobs_1086 %}{{livestock.cobs_1086 }} cobs. {% endif %}
+	{% if livestock.cattle_1086 %}{{livestock.cattle_1086 }} cattle. {% endif %}
+	{% if livestock.cows_1086 %}{{livestock.cows_1086 }} cows. {% endif %}
+	{% if livestock.pigs_1086 %}{{livestock.pigs_1086 }} pigs. {% endif %}
+	{% if livestock.sheep_1086 %}{{livestock.sheep_1086 }} sheep. {% endif %}
+	{% if livestock.goats_1086 %}{{livestock.goats_1086 }} goats. {% endif %}
+	{% if livestock.beehives_1086 %}{{livestock.beehives_1086 }} beehives. {% endif %}
+	{% if livestock.wild_mares_1086 %}{{livestock.wild_mares_1086 }} wild mares. {% endif %}
+	{% if livestock.other_1086 %}{{livestock.other_1086 }} {{livestock.other_codes_1086 }}. {% endif %}
+	</li>
+
+{% endif %}
+
+{% if tre_owners or trw_owners %}
+
+{% if tre_owners %}
+<li><strong>Owner in 1066: </strong>
+	{% for tre_owner in tre_owners %}
+
+	{% if tre_owner.lord66  %}<a href="{% url owner tre_owner.lord66 %}">{{tre_owner.lord66}}</a> (lord). {% endif %}
+	{% if tre_owner.overlord66 %}<a href="{% url owner tre_owner.overlord66 %}">{{tre_owner.overlord66}}</a> (overlord). {% endif %}
+	{% endfor %}
+</li>
+{% endif %}
+
+{% if trw_owners %}
+<li><strong>Owner in 1086: </strong>
+{% for trw_owner in trw_owners %}
+
+{% if trw_owner.lord86 %}<a href="{% url owner trw_owner.lord86 %}">{{trw_owner.lord86}}</a> (lord). {% endif %}
+{% if trw_owner.teninchief %}<a href="{% url owner trw_owner.teninchief %}">{{trw_owner.teninchief}}</a> (tenant-in-chief). {% endif %} 
+{% endfor %}
+</li>
+{% endif %}
+
+{% endif %}
+
+</ul> 
+
+</div>
+
+
+<div style="clear: both;"></div>
+</div>
+
+<script type="text/javascript">
+  place_name = '{{ place.vill }}';
+  window.onload = show_place('{{place.lat}}', '{{place.lon}}', '{{place.vill}}', '{{place.grid}}', '{{place.county}}', 12);
+
+</script>
+
+
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "domes/base.html" %}
+
+{% block title %}Map {% endblock %}
+{% block description %}Complete map of all places listed in the Domesday Book{% endblock %}
+{% block nav-class %}nav-map{% endblock %}
+{% block content %}
+
+<div class="page_title">
+<h1>Map of places in the Domesday Book</h1> 
+
+<p>The whole of England, as mapped in the Domesday Book.</p>
+</div>
+
+<div class="content">
+
+<div id="map_canvas" style="width: 100%; height: 700px"></div>
+</div>
+
+<div style="clear: both;"></div>
+
+<script type="text/javascript"> 
+window.onload = whole_map();
+</script>
+
+{% endblock %}

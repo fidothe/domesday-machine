@@ -1,0 +1,30 @@
+{% extends "domes/base.html" %}
+
+{% block title %}To do{% endblock %}
+
+{% block content %}
+<div class="page_title">
+<h1>TO DO</h1>
+</div>
+
+<div class="content">
+	
+	<ul style="float: left;">
+	<h4>Look and feel</h4>
+	<li>Do a proper design!</li>
+	<li>Test on people to see what they find confusing</li>
+	<h4>Home page</h4>   
+    <li>Do HTML5 home page for mobile devices so it'll show places near the person</li>
+    <li>Don't show the whole map on the home page - show a random place from Little Domesday instead, and do 'click again for another place', and have a search form for 'search near you'</li>
+    <h4>Data</h4>
+    <li>Add the Domesday statistics tables</li>
+    <li>Sort the text pages properly (so 1, 2, 10 rather than 1, 10, 2!)</li>
+    <li>Link the textbase through to pages/names.... if marked-up version available?</li>
+    <li>Deal with occasional bugs when processing Phillimore strings</li>
+    <li>Work out a good way to show non-mapped places (perhaps lists of places by county)</li>
+</ul>
+
+<p>Would be great to work out a way to show relative size of places on the map... perhaps link up to statistics database, then use mapping icons to show relative size</p>
+</div>
+<div style="clear: both;"></div>
+{% endblock %}

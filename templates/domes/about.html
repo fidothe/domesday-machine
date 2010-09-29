@@ -1,0 +1,45 @@
+{% extends "domes/base.html" %}
+{% block nav-class %}nav-about{% endblock %}
+{% block title %}About{% endblock %}
+{% block description %}About the Domesday Map website{% endblock %}
+
+{% block content %}
+<div class="page_title">
+<h1>About</h1>
+</div>
+
+<div class="content">
+
+<p>This is a project in its very early stages. Using freely available academic data, we have created a map of the settlements shown in Domesday Book. You can 
+search for places near you, and see their population, size and owners in 1086.</p>
+
+<p>We are now <strong>hoping to create the first freely available English translation of Domesday Book</strong>, using <a href="{% url translate %}">
+a transcription of the Latin text</a>, with 
+help from volunteers. A free translation would have many uses for scholars and the public.</p>
+
+<p>If you are interested in helping to translate the text for your local area, please <a href="">get in touch</a>.</p>
+
+<h3>About the data</h3>
+
+<div style="float: right; background-color: aliceblue; padding: 1em; margin-left: 1em; ">
+<a href="http://www.ahrb.ac.uk/"><img style="float: right;" src="/media/images/ahrc_logo.jpeg" title="AHRC logo"/></a>
+</div>
+
+<p>Domesday Book was transcribed and geocoded during the 1990s by a team led by Professor John Palmer at the University of Hull. This was funded by the <a href="http://www.ahrb.ac.uk/">AHRC</a>, 
+and assisted by a copy of the text provided by the publishers <a href="http://www.phillimore.co.uk/">Phillimore & Co</a>. There is more about the history of this project at the <a href="http://www.domesdaybook.net/">Domesday Explorer website</a>. 
+
+<p>This site was built in 2010 using that freely available data by Anna Powell-Smith. Professor Palmer's original data (which includes statistics and geolocations 
+for every place in Domesday) can be downloaded from the 
+<a href="http://www.data-archive.ac.uk/findingdata/snDescription.asp?sn=5694">Arts & Humanities Data Service</a>, in CSV or Access format. 
+In time, this site should also expose the data in JSON via an API.</p>
+
+<h3>Help with vocabulary</h3>
+
+<p>See the <a href="http://www.domesdaybook.net/helpfiles/idx.htm">Domesday Explorer helpfiles</a>. More help should follow here shortly - 
+if you have the expertise needed to add it, please <a href="/contact">get in touch</a>.</p>
+
+
+</div>
+<div style="clear: both;"></div>
+{% endblock %}
+

@@ -1,0 +1,20 @@
+{% extends "domes/base.html" %}
+{% block nav-class %}nav-contact{% endblock %}
+{% block title %}Contact{% endblock %}
+{% block content %}
+    <div class="page_title">
+        <h1>Contact</h1>
+        <p>
+Please get in touch! It would be particularly great to hear from you if you're interested in helping with the translation or developing the site. 
+Let me know your details if so. You can also contact me, Anna, directly on 07812 357037.
+        </p>
+    </div>
+    <div class="content">
+	    <h3>Get in touch</h3>
+	<form method="post" action="" id="contact_form">
+	{% csrf_token %}
+    {{ form.as_p }}
+<input type="submit" value="Send email">
+</form>
+    </div>
+{% endblock %}

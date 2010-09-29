@@ -1,0 +1,72 @@
+{% extends "domes/base.html" %}
+
+{% block title %}Search{% endblock %}
+
+{% block content %}
+
+<div class="page_title">
+<h2>Search</h2>
+<p>Search for Domesday Book entries near a English placename or postcode</p>
+</div>
+
+<div class="content col left">
+	
+{% if geo %}
+<p>Places in the Domesday Book near <strong>{{ geo }}</strong> (zoom out to see more):</p>
+<span id="searchresults"></span>
+<br/>
+{% else %}
+<p>Enter a place or a postcode above to find Domesday Book entries nearby.</p>
+{% endif %}
+
+</div>
+
+<div class="content col right">
+<div id="map_canvas" style="width: 100%; height: 400px"></div>
+</div>
+<div style="clear: both;"></div>
+
+
+<script type='text/javascript'>
+
+var openInfoWindow;
+var geocoder;
+
+//set up the initial map
+var latlng = new google.maps.LatLng(51.0629403, -1.3165037);
+var myOptions = {
+  zoom: 11,
+  scrollwheel: false,
+  center: latlng,
+  mapTypeId: google.maps.MapTypeId.ROADMAP
+};
+map = new google.maps.Map(document.getElementById("map_canvas"),myOptions);
+
+{% if geo %}
+geocoder = new google.maps.Geocoder();
+var address = '{{geo}}'; //"window.location.querystring"moddershall;
+if (geocoder) {
+	geocoder.geocode( { 'address': address, 'region': 'GB' }, function(results, status) {
+    var results_html = document.getElementById("searchresults");
+    if (status == google.maps.GeocoderStatus.OK) {
+      map.setCenter(results[0].geometry.location);
+      var marker = new google.maps.Marker({
+          map: map, 
+          position: results[0].geometry.location
+      });
+	  map.setZoom(12);
+	  search_page(results_html);
+    } else {
+      alert("Sorry, no places found for {{ geo }}. Please try again.");
+      results_html.innerHTML = "<strong>No results found!<strong> Zoom out or search again";
+    }
+  });
+}
+
+{% endif %}
+
+</script>
+
+{% endblock %}
+
+

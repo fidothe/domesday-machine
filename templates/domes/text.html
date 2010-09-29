@@ -1,0 +1,58 @@
+{% extends "domes/base.html" %}
+
+{% block title %}Text: {{ county_name }}{% endblock %}
+
+{% block content %}
+
+<div class="page_title">
+<h1>Text: {{ county_name }}</h1>
+
+
+<form type="get" action="" style="float: right;">
+	County: 
+<select name="county">
+	{% for county in counties %}
+	<OPTION VALUE="{{ county.name }}"{% ifequal county_name county.name %} selected="selected"{% endifequal %}>{{ county.name }}</option>
+	{% endfor %}
+</select>
+<input type="submit" value="Go">
+</form>
+
+<p>Text from the Domesday Book. See <a href="{% url faq %}#markup">notes on markup</a>.</p>
+
+</div>
+
+<div class="content">
+
+
+{% if text_all %}
+<h3>{{ county_name }}</h3>
+{% for text_element in text_all %}
+<p>
+<span id="{{ text_element.id }}">{{ text_element.id }}</span>
+{{ text_element.text|linebreaks }}<br/>
+</p>
+{% endfor %}
+
+{% endif %} 
+
+{% comment %}
+<table>
+{% for place in places %}
+<tr>
+<td><a href="/place/{{ place.placesidx }}/{{ place.vill }}">{{ place.vill }}</a></td>
+<td>{{ place.hundred }} hundred</td>
+<!-- <td>{% if place.oscodes %} (location known) {% else %} (location unknown) {% endif %}</td> -->
+</tr>
+{% endfor %}
+</table>
+
+{% endcomment %}
+
+</div>
+<div style="clear: both;"></div>
+{% endblock %}
+
+
+
+

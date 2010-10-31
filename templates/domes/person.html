@@ -1,18 +1,23 @@
 {% extends "domes/base.html" %}
 
-{% block title %}{{ person_name}} {% endblock %}
-{% block description %}Places in the Domesday Book owned by{{ owner_name}} {% endblock %}
+{% block title %}{{ person.name }} {% endblock %}
+{% block description %}Places in the Domesday Book owned by {{ person.name}} {% endblock %}
 {% block nav-class %}nav-people{% endblock %}
 
 {% block content %}
 
 <div class="page_title">
-<h1>Person: {{ person_name }}</h1>
+<h1>Person: {{ person.name }}</h1>
 </div>
 
 <div class="content col left">
 
-<p>Places owned by <strong>{{ person_name.upper }}</strong>.</p>
+<p>Places owned by <strong>{{ person.name.upper }}</strong>.</p>
+
+{% if person.namecode %}Name code: {{ person.namecode }}{% endif %}
+{% if person.gendercode %}Gender: {{ person.gendercode }}{% endif %}
+{% if person.churchcode %}Church affiliation:  {{ person.churchcode }}{% endif %}
+{% if person.xrefs %}References:  {{ person.xrefs }}{% endif %}
 
 {% if lord66_places or overlord66_places %}<h2>Before the Conquest</h2>{% endif %}
 

@@ -14,33 +14,6 @@
 
 <p>Hopefully this will get more useful soon.</p>
 
-	<!-- <div class="page_tabs">
-        <ul>
-            <li{% ifequal selected_tab "county" %} class="selected"{% endifequal %}>
-                <a href="#">County</a>
-            </li>
-            <li{% ifequal selected_tab "atoz" %} class="selected"{% endifequal %}>
-                <a href="#">A-Z</a>
-            </li>
-        </ul>
-    </div>
-
-    <div class="page_tab_body">
-        {% block tab %}
-        {% endblock %}
-    </div> -->
-
-<!-- county tab 
-
-<form type="get" action="">
-	<select name="county">
-		{% for county in county_list %}
-	     <option value="{{ county.name }}">{{ county.name }}</option>
-		{% endfor %}
-	</select>
-	<input type="submit" id="submit" value="Go">
-</form>-->
-
 <!-- A-Z tab -->
 	<div class="atozContainer"> 
 			<ul class="atoz"> 
@@ -75,7 +48,7 @@
 <ul>
 {% for place in places %}
 <li><a href="{% url place place.grid place.vill_slug %}">{{ place.vill }}</a>, 
-<a href="{% url county place.county %}">{{ place.county }}</a></li>
+<a href="{% url county place.county.name %}">{{ place.county.name }}</a></li>
 {% endfor %}
 </ul>
 

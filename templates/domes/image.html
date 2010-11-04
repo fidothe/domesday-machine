@@ -1,29 +1,40 @@
 {% extends "domes/base.html" %}
 
-{% block title %}{{ owner_name}} {% endblock %}
-{% block description %}Places in the Domesday Book owned by{{ owner_name}} {% endblock %}
+{% block title %}Domesday Book: {{county }}, page {{ number_clean}}{% endblock %}
+{% block description %}Domesday Book: {{county }}, page {{ number_clean}} {% endblock %}
 {% block nav-class %}nav-people{% endblock %}
 
 {% block content %}
 
 <div class="page_title">
-<h1>Image: image</h1>
+<h1>Book: {{county }}, page {{ number_clean}}</h1>
 </div>
 
 <div class="content">
 
-<img src='/media/images/ken/05.png' usemap="#green" />
-<map name="green">
-<area shape="rect" coords="0,0,100,100" href="http://www.trees.com/furniture.html"></map>
+<img src='/media/images/{{ filepath }}' class="page" usemap="#domesday" />
+
+<map name="domesday">
+{% for image in images %}
+{% with image.manor.place.all|first as place %}
+{% if place.id %}
+<area shape="rect" coords="{{image.x1}},{{image.y1}},{{image.x2}},{{image.y2}}" 
+   href="{% url place place.grid place.vill_slug %}" 
+   title="{{ place.vill }}"
+   alt="{{ place.vill }}" 
+/>
+{% else %}
+<area shape="rect" coords="{{image.x1}},{{image.y1}},{{image.x2}},{{image.y2}}" 
+   href="{% url place 'unknown' 'unknown' %}" 
+   title="Unknown {{ image.manor.structidx }}"
+   alt="Unknown {{ image.manor.structidx }}" 
+/>
+{% endif %}
+{% endwith %}
+{% endfor %}
+</map>
+
 </div>
-
-
-<div style="clear: both;"></div>
-
-
-<script type='text/javascript'>
-
-</script>
 
 {% endblock %}
 

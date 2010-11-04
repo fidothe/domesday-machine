@@ -24,18 +24,37 @@ except:
     exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
     sys.exit("Database connection failed!\n ->%s" % (exceptionValue))
 
+# return the status of a place as defined in 
+# John Palmer's encoding system
+def place_status(place_name):
+    place_name = place_name.strip("'")
+    if place_name[0]=="`":
+        status = "'No longer exists, but can be identified on the ground'"
+        place_name = place_name.replace("'","")
+        place_name = place_name.replace("`","")
+    elif place_name[0]=="{":
+        status = "'Lost, can only be located approximately'"
+        place_name = place_name.replace("{","")
+        place_name = place_name.replace("}","")
+    else:
+        status = "NULL" 
+    if place_name!="NULL":
+        place_name = "'%s'" % (place_name)
+    return place_name, status
+
 ###############################
 # Places
 ###############################
 
 def get_counties():
-    print "get_counties()"	
+    print "get_counties()"  
     cursor.execute('delete from domes_county;')
     for key,value in county_dict.county_dict.items():
-           sql_string = "INSERT INTO domes_county (short_code,name) VALUES (%s,%s) "
-           cursor.execute(sql_string, (key,value))
+           sql_string = "INSERT INTO domes_county (short_code,name,name_slug) VALUES (%s,%s,%s)"
+           name_slug = unicode(slugify(value))
+           cursor.execute(sql_string, (key,value,name_slug))
     conn.commit()
-	
+    
 def get_places():
     print "get_places()"
     # open tab file
@@ -55,6 +74,12 @@ def get_places():
                county = util.postgres_escape(county, False)
            phillimore = util.postgres_escape(values[2], False)
            hundred = util.postgres_escape(values[3], False)
+           hundred_slug = slugify(hundred)
+           hundred, status = place_status(hundred)
+           sql_string = "INSERT INTO domes_hundred (name,name_slug,status) SELECT "
+           sql_string += hundred + ", '" + hundred_slug + "', " + status + " WHERE "
+           sql_string += hundred + " NOT IN (SELECT NAME FROM domes_hundred);"
+           cursor.execute(sql_string)
            vill = values[4]
            # `' = place no longer exists but can be identified on ground 
            # [] name inside brackets = lost, only approximately located
@@ -64,21 +89,23 @@ def get_places():
                 pass
            vill_slug = slugify(vill)[:49]
            vill = util.postgres_escape(vill, False)
+           vill, status = place_status(vill)
            area = util.postgres_escape(values[5], False)
            xrefs = util.postgres_escape(values[6], False)
            grid = util.postgres_escape(values[7], False)
            os_codes = util.postgres_escape(values[8], False)
            if grid!="NULL" and grid!=None:
                location = util.convert_os_to_coords(grid.strip("'"))
-           sql_string = "INSERT INTO domes_place (id,county_id,phillimore,hundred,"
-           sql_string += "vill,vill_slug,area,xrefs,grid,os_codes,location) VALUES ("
+           else:
+               grid="'unknown'"
+           sql_string = "INSERT INTO domes_place (id,county_id,phillimore,hundred_id,"
+           sql_string += "vill,vill_slug,area,xrefs,grid,os_codes,location,status) VALUES ("
            sql_string += id + ", " + county + ", " + phillimore + ", " + hundred + ", "
            sql_string += vill + ", '" + vill_slug + "', " + area + ", " + xrefs + ", "
-           sql_string += grid + ", " + os_codes + ", " + location + ");"
+           sql_string += grid + ", " + os_codes + ", " + location + ", " + status + ");"
            cursor.execute(sql_string)
     conn.commit()
 
-	#INSERT INTO domes_place (id,county_id,phillimore,hundred,vill,vill_slug,area,xrefs,grid,os_codes,location) VALUES
 ###############################
 # Place references
 ###############################
@@ -88,21 +115,21 @@ def get_placerefs():
     fn = os.path.join(os.path.dirname(__file__), 'new_data/ByPlace For AHRC.txt')
     f = open(fn, 'r')
     file_lines = f.readlines()
-    cursor.execute('delete from domes_placeref;')
+    cursor.execute('delete from domes_manor_place;')
     # get values from tab file 
     for (counter, line) in enumerate(file_lines): 
            if counter==0:
                continue
            values = util.line_to_values(line,13)
            manor_id = values[1]
-           holding = values[9]
-           units = util.postgres_escape(values[10])
            place_id = values[12]
            if not place_id:
                continue
-           sql_string = "INSERT INTO domes_placeref (manor_id, place_id, holding, units) "
-           sql_string += "VALUES (%s,%s,%s,%s)"
-           cursor.execute(sql_string, (manor_id, place_id, holding, units))
+           sql_string = "INSERT INTO domes_manor_place (manor_id, place_id) SELECT "
+           sql_string += manor_id + ", " + place_id + " WHERE "
+           sql_string += manor_id + " NOT IN (SELECT manor_id FROM domes_manor_place) AND "
+           sql_string += place_id + " NOT IN (SELECT place_id FROM domes_manor_place);"
+           cursor.execute(sql_string)
     conn.commit()
 
 ###############################
@@ -198,14 +225,6 @@ def get_manors():
             sql_string += "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,"
             sql_string += "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,"
             sql_string += "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-            # print sql_string % (structidx,county,phillimore,headofmanor,duplicates,subholdings,notes,\
-            #               waste,waste66,wasteqr,waste86,geld,gcode,villtax,\
-            #               taxedon,value86,value66,valueqr,value_string,render,lordsland,\
-            #               newland,ploughlands,pcode,lordsploughs,mensploughs,totalploughs,lordsploughspossible, \
-            #               mensploughspossible,totalploughspossible,villagers,smallholders,slaves,femaleslaves,freemen, \
-            #               free2men,priests,cottagers,otherpop,miscpop,miscpopcategories,burgesses,\
-            #               mills,millvalue,meadow,meadowunits,pasture,pastureunits,woodland,\
-            #               woodlandunits,fisheries,salthouses,payments,paymentsunits,churches,churchland)
             cursor.execute(sql_string, (structidx,county,phillimore,headofmanor,duplicates,subholdings,notes,\
                           waste,waste66,wasteqr,waste86,geld,gcode,villtax,\
                           taxedon,value86,value66,valueqr,value_string,render,lordsland,\
@@ -316,8 +335,8 @@ def get_people():
             xrefs = values[5]
             if xrefs:
                 print xrefs
-                xrefs1 = xrefs.decode("utf-8")
-            xrefs = util.postgres_escape(xrefs1)
+                xrefs = xrefs.decode("utf-8").encode("utf-8")
+            xrefs = util.postgres_escape(xrefs)
             sql_string = "INSERT INTO domes_person (namesidx, name, name_slug, "
             sql_string += "namecode, gendercode, churchcode, xrefs) "
             sql_string += " VALUES (%s,%s,%s,%s,%s,%s,%s)"
@@ -347,7 +366,8 @@ def get_treowners():
     fn = os.path.join(os.path.dirname(__file__), 'new_data/TRE For AHRC.txt')
     f = open(fn, 'r')
     file_lines = f.readlines()
-    cursor.execute('delete from domes_treowner;')
+    cursor.execute('delete from domes_manor_lord66;')
+    cursor.execute('delete from domes_manor_overlord66;')
     unique_names, match_names = util.get_unique_names()
     missing_lord66 =  ['62450', '272000', '495170', '252200', '120810', '476750', '576050', '399450', '382300', '431700', '23350', '23300', '85500', '114700', '165150', '48700', '171720', '397560', '156850', '185950', '524260', '519100', '167070', '532050', '120750', '372010', '126950', '259390']
     missing_overlord66 = ['50830', '159250', '344670', '574150', '50650', '156850', '532050', '530050', '160400', '126950', '259390', '259380', '344560']
@@ -358,6 +378,10 @@ def get_treowners():
             values = util.line_to_values(line,14)
             tre_id = values[0]
             structidx = values[1]
+            if structidx=="11276":
+                print 'Yay, found my row!'
+            if not structidx:
+                continue
             idxoverlord66 = values[7]
             if idxoverlord66 in missing_overlord66:
                 continue
@@ -374,25 +398,50 @@ def get_treowners():
                         if idxoverlord66 not in missing_overlord66:
                              missing_overlord66.append(idxoverlord66)
             idxlord66 = values[8]
+            if structidx=="11276":
+                print 'idxlord66', idxlord66
             if idxlord66 in missing_lord66:
                 continue
             if idxlord66 is not None:
                 if (idxlord66 not in unique_names):
-                    #print 'idxlord66 not in unique_names'
+                    if structidx=="11276":
+                        print 'idxlord66 not in unique_names'
                     match_found = False
                     for potential_match in match_names:
+                       if structidx=="11276":
+                           print potential_match
                        if idxlord66==potential_match['matchidx']:
                            idxlord66=potential_match['unique']
                            match_found = True
+                           if structidx=="11276":
+                               print 'MATCH FOUND! with idxlord66 ', idxlord66
                            break
                     if not match_found:
-                       #print 'match not found for idxlord66 ' + str(idxlord66)
+                       if structidx=="11276":
+                           print 'MATCH NOT FOUND for idxlord66! ' + str(idxlord66)
                        #missing_lord66.append(idxlord66)
                        if idxlord66 not in missing_lord66:
                             missing_lord66.append(idxlord66)
-            sql_string = "INSERT INTO domes_treowner (tre_id,manor_id, " 
-            sql_string += "overlord66_id,lord66_id) VALUES (%s,%s,%s,%s)" 
-            cursor.execute(sql_string, (tre_id,structidx,idxoverlord66,idxlord66))
+            if structidx=="11276":
+                print 'idxlord66 is now', idxlord66
+            if idxlord66:
+                sql_string = "SELECT manor_id from domes_manor_lord66 WHERE manor_id="
+                sql_string += structidx + " AND person_id=" + idxlord66 + ";"
+                cursor.execute(sql_string)
+                if not cursor.fetchall():
+                    sql_string = "INSERT INTO domes_manor_lord66 (manor_id, person_id) VALUES ("
+                    sql_string += structidx + ", " + idxlord66 + ");"
+                    if structidx=="11276":
+                        print sql_string
+                    cursor.execute(sql_string)
+            if idxoverlord66:
+                sql_string = "SELECT manor_id from domes_manor_overlord66 WHERE manor_id="
+                sql_string += structidx + " AND person_id=" + idxoverlord66 + ";"
+                cursor.execute(sql_string)
+                if not cursor.fetchall():
+                    sql_string = "INSERT INTO domes_manor_overlord66 (manor_id, person_id) VALUES ("
+                    sql_string += structidx + ", " + idxoverlord66 + ");"
+                    cursor.execute(sql_string)
     print "missing lord66s", missing_lord66
     print "missing overlord66s", missing_overlord66
     conn.commit()
@@ -413,7 +462,8 @@ def get_trwowners():
     fn = os.path.join(os.path.dirname(__file__), 'new_data/TRW For AHRC.txt')
     f = open(fn, 'r')
     file_lines = f.readlines()
-    cursor.execute('delete from domes_trwowner;')
+    cursor.execute('delete from domes_manor_lord86;')
+    cursor.execute('delete from domes_manor_teninchief;')
     unique_names, match_names = util.get_unique_names()
     missing_teninchief = []
     missing_lord86 = []
@@ -428,11 +478,8 @@ def get_trwowners():
             idxteninchief = values[13]
             if idxteninchief in missing_teninchief:
                 continue
-            if idxteninchief!='305150':
-                continue # Text with this one, which is not found in unique_names
-            print 'idxteninchief is ' + str(idxteninchief)
             if (idxteninchief not in unique_names):
-                print 'idxteninchief not in unique_names'
+                #print 'idxteninchief not in unique_names'
                 match_found = False
                 for potential_match in match_names:
                    if idxteninchief==potential_match['matchidx']:
@@ -454,9 +501,22 @@ def get_trwowners():
                 if not match_found:
                     if idxlord86 not in missing_lord86:
                         missing_lord86.append(idxlord86)
-            sql_string = "INSERT INTO domes_trwowner (trw_id,manor_id,demesne86,"
-            sql_string += "teninchief_id,lord86_id) VALUES (%s,%s,%s,%s,%s)"
-            cursor.execute(sql_string, (trw_id,structidx,demesne86,idxteninchief,idxlord86))
+            if idxlord86:
+                sql_string = "SELECT manor_id from domes_manor_lord86 WHERE manor_id="
+                sql_string += structidx + " AND person_id=" + idxlord86 + ";"
+                cursor.execute(sql_string)
+                if not cursor.fetchall():
+                    sql_string = "INSERT INTO domes_manor_lord86 (manor_id, person_id) VALUES ("
+                    sql_string += structidx + ", " + idxlord86 + ");"
+                    cursor.execute(sql_string)
+            if idxteninchief:
+                sql_string = "SELECT manor_id from domes_manor_teninchief WHERE manor_id="
+                sql_string += structidx + " AND person_id=" + idxteninchief + ";"
+                cursor.execute(sql_string)
+                if not cursor.fetchall():
+                    sql_string = "INSERT INTO domes_manor_teninchief (manor_id, person_id) VALUES ("
+                    sql_string += structidx + ", " + idxteninchief + ");"
+                    cursor.execute(sql_string)
     print "missing lord86s", missing_lord86
     print "missing teninchiefs", missing_teninchief
     conn.commit()
@@ -501,22 +561,21 @@ def get_images():
 ###############################
 # Call all the functions...
 ###############################
-# Get places 
-get_counties()
-get_places() # fails
-
-get_manors() # works
-get_livestock() # works
-get_placerefs() # dependent on places
-
-# Get images
-get_images() # problem of missing structidxs! ???
-
-# Get people
-get_people() # works
+# # Get places 
+# get_counties()
+# get_places() 
+# get_manors() 
+# get_livestock() 
+# get_placerefs() 
+# 
+# #Get images
+# get_images() 
+# 
+# #Get people
+# get_people() 
 #get_peoplenotes() # incomplete
-get_treowners() # works
-get_trwowners() # 
+#get_treowners() 
+get_trwowners()
 
 conn.commit()
 cursor.close()

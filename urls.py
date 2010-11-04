@@ -11,23 +11,23 @@ urlpatterns = patterns('',
     url(r'^$', 'domes.views.homepage', name="home"),
     # Map
     url(r'map/$', 'domes.views.map', name="map"),
-    # Places and people
+    # Places
     url(r'^county/$', 'domes.views.all_counties', name="counties"),
-    url(r'^place/$', 'domes.views.all_places', name="all_places"),
     url(r'^county/(?P<county_name>.+)/$', 'domes.views.county', name="county"),
+    url(r'^place/$', 'domes.views.all_places', name="all_places"),
     url(r'^place/(?P<grid>[A-Za-z0-9]+)/(?P<vill_slug>.+)/$', 'domes.views.place', name="place"),
-    url(r'^hundred/(?P<hundred_name>.+)/$', 'domes.views.hundred', name="hundred"),
-    url(r'^owner/(?P<owner_name>.+)/$', 'domes.views.owner', name="owner"),
+    url(r'^hundred/(?P<hundred_name_slug>.+)/$', 'domes.views.hundred', name="hundred"),
     # People
     url(r'^people/$', 'domes.views.all_people', name="all_people"),
-    url(r'^people/(?P<nameidx>[0-9]+)/(?P<name_slug>.+)/$', 'domes.views.person', name="person"),
+    url(r'^people/(?P<namesidx>[0-9]+)/(?P<name_slug>.+)/$', 'domes.views.person', name="person"),
+    # Images
+    url(r'^image/$', 'domes.views.all_images', name="all_images"),
+    url(r'^image/(?P<county>[A-Za-z]+)/(?P<number>[0-9]+)/$', 'domes.views.image', name="image"),
     # Text and statistics
     url(r'^text/$', 'domes.views.text', name="text"),
     url(r'^book/$', 'domes.views.book', name="book"),
     url(r'^translate/$', 'domes.views.translate', name="translate"),
-    url(r'^stats/$', 'domes.views.stats', name="stats"),
-    # Images
-    url(r'^image/$', 'domes.views.image', name="image"),
+    url(r'^stats/$', 'domes.views.stats', name="stats"), 
     # FAQ and to-do list
     #url(r'^forum/$', 'domes.views.forum', name="forum"),
     url(r'^about/$', 'domes.views.about', name="about"),

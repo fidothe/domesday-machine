@@ -1,42 +1,23 @@
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import Template, RequestContext, loader, Context
+from django.contrib.gis.geos import Point, Polygon
+from django.contrib.gis.geos import fromstr
+from django.contrib.gis.measure import D
 from django.conf import settings
 from domes.models import *
 from domes.forms import EmailSignupForm
-from django.db.models import Count
+from django.db.models import Count, Sum
 import re, urllib2, random
 from django.utils import simplejson
+import util
 
 ################################
 # Home page and map
 ################################
 
 def homepage(request):
-    # get all the grids with no vills, choose a random one
-    placeidx = random.choice(random_places)
-    place = Place.objects.get(placeidx=placeidx)
-    manor = Manor.objects.get(structidx=place.structidx).get_interesting_queryset()
-    other_vills = Place.objects.filter(structidx=place.structidx).exclude(vill=place.vill).order_by('vill')
-    has_image = False
-    try:
-        tre_owners = TreOwner.objects.filter(structidx=place.structidx)
-    except TreOwner.DoesNotExist:
-        tre_owners = None
-    try:
-        image = Image.objects.get(structidx=place.structidx)
-        has_image = True
-    except Image.DoesNotExist:
-        place_image = None
-    try:
-        livestock = Livestock.objects.get(structidx=place.structidx)
-    except Livestock.DoesNotExist:
-        livestock = None
-    try:
-        trw_owners = TrwOwner.objects.filter(structidx=place.structidx)
-    except TrwOwner.DoesNotExist:
-        trw_owners = None
-    return render_to_response('domes/homepage.html', { 'has_map' : True, 'has_image': has_image, 'no_search_form' : True, 'place' : place, 'manor': manor, 'trw_owners': trw_owners, 'tre_owners':tre_owners, 'livestock':livestock}, context_instance = RequestContext(request))
+    return render_to_response('domes/homepage.html', {}, context_instance = RequestContext(request))
 
 def all_markers(request):
     query = "SELECT * FROM domes_place WHERE grid!='none' AND vill!='-' AND lat!='0.0' GROUP BY grid, vill"
@@ -80,31 +61,30 @@ def markers_within_bounds(request):
     swLng = request.GET.get('swLng')
     neLat = request.GET.get('neLat')
     neLng = request.GET.get('neLng')
-    centreLat = request.GET.get('centreLat')
-    centreLng = request.GET.get('centreLng')
-    order_by_distance = request.GET.get('order_by_distance')
-    if order_by_distance=='true':
-       query = "SELECT lat, lng, vill, grid, waste86, holding, units, (SQRT(((lat-%s)*(lat-%s)) + ((lng-%s)*(lng-%s)))) AS distance FROM domes_place WHERE lat<%s AND lat>%s AND lon<%s AND lon>%s GROUP BY grid, vill ORDER BY distance;"
-       params = [centreLat,centreLat,centreLng,centreLng,swLat,neLat,swLng,neLng]
-       places = Place.objects.raw(query, params)
-    else:
-       places = Place.objects.filter(lat__range=(swLat, neLat),lon__range=(swLng, neLng))
-       query = "SELECT * FROM domes_place WHERE lat<%s AND lat>%s AND lon<%s AND lon>%s GROUP BY grid, vill"
-       params = [neLat,swLat,neLng,swLng]
-       places = Place.objects.raw(query, params)
+    centreLat = str(request.GET.get('centreLat'))
+    centreLng = str(request.GET.get('centreLng'))
+    print centreLat, centreLng
+    centre = fromstr('POINT(%s %s)' % (centreLng, centreLat))
+    boundaries = fromstr('POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))' % \
+           (swLng, swLat, swLng, neLat, neLng, neLat, neLng, swLat, swLng, swLat))
+    places = Place.objects.filter(location__within=boundaries).distance(centre).order_by('distance')
+    for place in places:
+        print place.vill
     markers = []
     for place in places:
         place_dict = {}
-        place_dict['placeidx'] = str(place.placeidx)
-        place_dict['lat'] = str(place.lat)
-        place_dict['lng'] = str(place.lon)
-        place_dict['vill'] = place.vill
+        place_dict['lat'] = place.location.y
+        place_dict['lng'] = place.location.x
         place_dict['grid'] = place.grid
-        place_dict['hundred'] = place.hundred
-        place_dict['county'] = place.county
-        place_dict['waste86'] = place.waste86
-        place_dict['holding'] = place.holding
-        place_dict['units'] = place.units
+        place_dict['vill'] = place.vill
+        place_dict['vill_slug'] = place.vill_slug
+        if place.hundred:
+            place_dict['hundred'] = place.hundred.name
+            place_dict['hundred_slug'] = place.hundred.name_slug
+        place_dict['county'] = place.county.name
+        place_dict['value'] = place.value
+        place_dict['distance'] = str(place.distance/1000).rstrip(" m")
+        place_dict['raw_value'] = place.raw_value
         markers.append(place_dict)
     json = simplejson.dumps(markers)
     return HttpResponse(json, mimetype='application/json')
@@ -113,78 +93,32 @@ def map(request):
     return render_to_response('domes/map.html', { 'has_map' : True, }, context_instance = RequestContext(request))
 
 ################################
-# Individual places and people
+# Images
 ################################
-def image(request):
+
+def all_images(request):
     return render_to_response('domes/image.html', { }, context_instance = RequestContext(request))
-		
+
+def image(request, county, number):
+    number = urllib2.unquote(number)
+    number_clean = number.lstrip("0")
+    county_slug = urllib2.unquote(county)
+    county_object = get_object_or_404(County, name_slug=county_slug)
+    filepath = "%s/%s.png" % (county_object.short_code.lower(), number)
+    images = Image.objects.filter(image=filepath)
+    return render_to_response('domes/image.html', { 'images': images, 'county': county, 'number_clean' : number_clean, 'filepath' : filepath }, context_instance = RequestContext(request))
+
 ################################
 # Individual places and people
 ################################
 def place(request, grid, vill_slug):
     vill_slug = urllib2.unquote(vill_slug)
     grid = urllib2.unquote(grid)
-    place = get_object_or_404(Place, grid=grid)
-    placerefs = PlaceRef.objects.filter(place=place)
-    manors = Manor.objects.filter(placeref__place__id=place.id)
-    #query = "sum(holding) as total_holding from domes_place where vill=%s and grid=%s group by grid,vill"
-    #params = (grid,vill)
-    #total_holding = Place.objects.raw(query, params)
-    #comment_place = Place.objects.filter(grid=grid,vill_slug=vill_slug).order_by('structidx')[0]
-    # Tell the template whether we have a map
-    # if grid != "none":
-    #     has_map = True
-    # else:
-    #     has_map = False
-    # # Next: get the structidx for each place object into an array
-    # # and work out the total holding in geld
-    # place_structidxs = []
-    # total_holding = 0.0
-    # for place in places:
-    #     place_structidxs.append(place.structidx)
-    #     if place.units == "geld":
-    #         try:
-    #             holding = float(place.holding)
-    #         except ValueError:
-    #             holding = 0.0
-    #         total_holding += holding
-    # # Now: return a dictionary of dictionaries. Each inner dictionary is one Domesday entry
-    # uber_struct = []
-    # has_image = False
-    # for place_structidx in place_structidxs:
-    #     try:
-    #         image = Image.objects.get(structidx=place_structidx)
-    #         has_image = True
-    #     except Image.DoesNotExist:
-    #         place_image = None
-    #     place_dict = {}
-    #     place_dict['hundred'] = Place.objects.get(structidx=place_structidx, vill_slug=vill_slug).hundred
-    #     place_dict['phillimore'] = Place.objects.get(structidx=place_structidx, vill_slug=vill_slug).phillimore
-    #     place_dict['area'] = Place.objects.get(structidx=place_structidx, vill_slug=vill_slug).area
-    #     place_dict['county'] = Place.objects.get(structidx=place_structidx, vill_slug=vill_slug).county
-    #     place_dict['waste86'] = Place.objects.get(structidx=place_structidx, vill_slug=vill_slug).waste86
-    #     place_dict['structidx'] = place_structidx
-    #     lat = '52.5'
-    #     lng = '0.0'
-    #     grid = Place.objects.get(structidx=place_structidx, vill_slug=vill_slug).grid
-    #     place_Person = Place.objects.get(structidx=place_structidx, vill_slug=vill_slug).vill
-    #     county = Place.objects.get(structidx=place_structidx, vill_slug=vill_slug).county
-    #     manor = Manor.objects.get(structidx=place_structidx)
-    #     place_dict['manor'] = manor.get_interesting_queryset()
-    #     place_dict['other_vills'] = Place.objects.filter(structidx=place_structidx).exclude(vill_slug=vill_slug).order_by('vill')
-    #     place_dict['tre_owners'] = TreOwner.objects.filter(structidx=place_structidx)
-    #     try:
-    #         place_dict['livestock'] = Livestock.objects.get(structidx=place_structidx)
-    #     except Livestock.DoesNotExist:
-    #         place_dict['livestock'] = None
-    #     place_dict['trw_owners'] = TrwOwner.objects.filter(structidx=place_structidx)
-    #     print place_structidx
-    #     uber_struct.append(place_dict)   
-    # phillimore = None
-    # description_text = []      
-    # form = EmailSignupForm()
-    #return render_to_response('domes/place.html', { 'comment_place': comment_place, 'vill': vill, 'lat': lat, 'lng': lng, 'grid':grid, 'place_Person':place_Person, 'county': county, 'total_holding': total_holding, 'place_structidxs': place_structidxs, 'uber_struct' : uber_struct, 'description_text' : description_text, 'phillimore_array' : phillimore, 'has_map' : has_map, 'has_image' : has_image, }, context_instance = RequestContext(request))
-    return render_to_response('domes/place.html', { 'place': place, 'manors': manors }, context_instance = RequestContext(request))
+    place = get_object_or_404(Place, grid=grid, vill_slug=vill_slug)
+    manors = Manor.objects.filter(place__id=place.id)
+    #total_holding = util.get_holding(place.placeref_set.all())
+    total_holding = "total_holding"
+    return render_to_response('domes/place.html', { 'place': place, 'manors': manors, 'total_holding': total_holding }, context_instance = RequestContext(request))
 
 def county(request, county_Person):
     county_Person = urllib2.unquote(county_Person)
@@ -193,72 +127,14 @@ def county(request, county_Person):
     places = Place.objects.raw(query, params)
     return render_to_response('domes/county.html', { 'county_Person' : county_Person, 'places' : places, 'has_map' : True,  }, context_instance = RequestContext(request))
 
-def hundred(request, hundred_Person):
-    hundred_Person = urllib2.unquote(hundred_Person)
-    query = "SELECT placeidx, county, grid, holding, units, vill, count(*) AS count FROM domes_place WHERE hundred=%s AND vill!='-' GROUP BY grid, vill"
-    params = (hundred_Person,)
-    places = Place.objects.raw(query, params)
-    return render_to_response('domes/hundred.html', { 'hundred_Person' : hundred_Person, 'places' : places, 'has_map' : True,  }, context_instance = RequestContext(request))
+def hundred(request, hundred_name_slug):
+    hundred_name_slug = urllib2.unquote(hundred_name_slug)
+    hundred = Hundred.objects.get(name_slug=hundred_name_slug)
+    return render_to_response('domes/hundred.html', { 'hundred': hundred }, context_instance = RequestContext(request))
 
-def owner(request, owner_Person):
-    owner_Person = urllib2.unquote(owner_Person)
-#    query = "SELECT structidx FROM domes_TreOwner WHERE lord66=%s"
- #   params = (owner_Person,)
- #   lord66_places = TreOwner.objects.raw(query, params)
-    lord66_owners = TreOwner.objects.filter(lord66=owner_Person)
-    lord66_places = []
-    for owner in lord66_owners:
-        actual_places = Place.objects.filter(structidx=owner.structidx)
-        for actual_place in actual_places:
-            lord66_places.append(actual_place)
-    overlord66_owners = TreOwner.objects.filter(overlord66=owner_Person)
-    overlord66_places = []
-    for owner in overlord66_owners:
-        actual_places = Place.objects.filter(structidx=owner.structidx)
-        for actual_place in actual_places:
-            overlord66_places.append(actual_place)
-    lord86_owners = TrwOwner.objects.filter(lord86=owner_Person)
-    lord86_places = []
-    for owner in lord86_owners:
-        actual_places = Place.objects.filter(structidx=owner.structidx)
-        for actual_place in actual_places:
-            lord86_places.append(actual_place)
-    teninchief86_owners = TrwOwner.objects.filter(teninchief=owner_Person)
-    teninchief86_places = []
-    for owner in teninchief86_owners:
-        actual_places = Place.objects.filter(structidx=owner.structidx)
-        for actual_place in actual_places:
-            teninchief86_places.append(actual_place)
-    return render_to_response('domes/owner.html', { 'owner_Person' : owner_Person, 'lord66_places' : lord66_places, 'overlord66_places' : overlord66_places, 'lord86_places' : lord86_places, 'teninchief86_places' : teninchief86_places, 'has_map' : True,  }, context_instance = RequestContext(request))
-
-def person(request, Personidx, Person_slug):
-    person = Person.objects.get(Personsidx=Personidx)
-    lord66_owners = TreOwner.objects.filter(idxlord66=Personidx)
-    lord66_places = []
-    for owner in lord66_owners:
-          placerefs = owner.get_places()
-    #     for actual_place in actual_places:
-    #         lord66_places.append(actual_place)
-    # overlord66_owners = TreOwner.objects.filter(idxoverlord66=Personidx)
-    # overlord66_places = []
-    # for owner in overlord66_owners:
-    #     actual_places = Place.objects.filter(structidx=owner.structidx)
-    #     for actual_place in actual_places:
-    #         overlord66_places.append(actual_place)
-    # lord86_owners = TrwOwner.objects.filter(idxlord86=Personidx)
-    # lord86_places = []
-    # for owner in lord86_owners:
-    #     actual_places = Place.objects.filter(structidx=owner.structidx)
-    #     for actual_place in actual_places:
-    #         lord86_places.append(actual_place)
-    # teninchief86_owners = TrwOwner.objects.filter(idxteninchief=Personidx)
-    # teninchief86_places = []
-    # for owner in teninchief86_owners:
-    #     actual_places = Place.objects.filter(structidx=owner.structidx)
-    #     for actual_place in actual_places:
-    #         teninchief86_places.append(actual_place)
-    # return render_to_response('domes/person.html', { 'person_Person' : person_Person, 'lord66_places' : lord66_places, 'overlord66_places' : overlord66_places, 'lord86_places' : lord86_places, 'teninchief86_places' : teninchief86_places, 'has_map' : True,  }, context_instance = RequestContext(request))
-    return render_to_response('domes/person.html', { 'person' : person, 'placerefs': placerefs, 'has_map' : True,  }, context_instance = RequestContext(request))
+def person(request, namesidx, name_slug):
+    person = Person.objects.get(namesidx=namesidx)
+    return render_to_response('domes/person.html', { 'person' : person }, context_instance = RequestContext(request))
 
 ################################
 # Search
@@ -293,8 +169,12 @@ def all_places(request):
 
 def all_people(request):
     index_char = request.GET.get('indexChar', 'a')
-    people = Person.objects.filter(Person__istartswith=index_char).order_by('name')
+    people = Person.objects.filter(name__istartswith=index_char).order_by('name')
     return render_to_response('domes/all_people.html', { 'people' : people, }, context_instance = RequestContext(request))
+
+################################
+# Generic pages
+################################
 
 def translate(request):
     return render_to_response('domes/translate.html', {}, context_instance = RequestContext(request))

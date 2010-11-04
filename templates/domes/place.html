@@ -11,45 +11,72 @@
 <div class="page_title">
 <h1>Place: {{ place.vill }}</h1>
 </div>
-<div class="content" style="min-height: 420px;">
+
+<div class="content">
+
+<div id="divMap">
+<div id="map_canvas" style="width:400px; height:400px;"></div>
+</div>
+</div>
+
+{{place.id }}
+
+<!-- summary info -->
 <ul>
-<li><strong>Hundred: </strong><a href="{% url hundred place.hundred %}">{{ place.hundred }}</a></li>
+{% if place.hundred %}<li><strong>Hundred: </strong><a href="{% url hundred place.hundred.name_slug %}">{{ place.hundred }}</a></li>{% endif %}
 {% if place.area %}<li><strong>Area: </strong>{{ place.area }}</li>{% endif %}
-<li><strong>County: </strong> <a href="{% url county place.county.name %}">{{ place.county.name }}</a></li>
+<li><strong>County:</strong> <a href="{% url county place.county.name_slug %}">{{ place.county.name }}</a></li>
+{% if place.value %}
+<li><strong>Tax value: </strong> 
+{% for key,value in place.value.items %}
+{{ value|floatformat }} {{key}}{% if forloop.last %}.{% else %}, {% endif %}
+{% endfor %}
+{% endif %}
+{% if place.status %}<li><strong>Location:</strong> {{ place.status }}</li>{% endif %}
 </ul>
 
-
+<!-- Number of entries -->
 {% if manors|length > 1 %}
 <p>{{ place.vill }} appears in {{ manors|length }} {{ manors|length|pluralize:"entry,entries" }} in the Domesday Book.</p>
 {% endif %}
 
+<!-- Each entry -->
 {% for manor in manors %}
 
+<!-- Entry title -->
 {% if manors|length > 1 %}
 <p><strong>❧ ENTRY {{ forloop.counter }} ❧</strong></p>
 {% endif %}
 
-{% if manor.image_set.count > 0 %}
-<a href="{{ MEDIA_URL }}images/cropped/{{ manor.structidx }}.png" class="thickbox" rel="gallery-domesday">
-<img width="400px" height="100px" src="{{ MEDIA_URL }}images/cropped/{{ manor.structidx }}_thumb.png" title="" />
+<!-- Entry image -->
+{% for image in manor.image_set.all %}
+<a href="{{ MEDIA_URL }}images/cropped/{{ image.manor.structidx }}.png" class="thickbox" rel="gallery-domesday">
+<img width="400px" height="100px" src="{{ MEDIA_URL }}images/cropped/{{ image.manor.structidx  }}_thumb.png" title="" />
 </a>
-<a href="">see full image</a>
+{{ image.county.name }}, page {{ image.filenum }}
+<a href="{% url image image.county.name_slug image.fullnum %}">See on page</a>
+{% endfor %}
+{{manor.structidx }}
+<ul>
+{% if manor.headofmanor %}
+<li><strong>Head of manor:</strong> {{ manor.headofmanor }}.</li>
 {% endif %}
 
-<ul>
+{% if manor.geld %}
 <li><strong>Value: </strong>
-{% if manor.geld %}Taxable value {{ manor.geld }} {{manor.gcode}}. {% endif %}
-{% if manor.value86 %}Value in 1086 £{{ manor.value86 }}. {% endif %}
-{% if manor.value66 %}Value in 1066 £{{ manor.value66 }}. {% endif %}
-{% if manor.valueqr %}Value c. 1070 £{{ manor.valueqr }}. {% endif %}
+{% if manor.geld %}Taxable value {{ manor.geld|floatformat }} {{manor.gcode}}. {% endif %}
+{% if manor.value66 %}Value in 1066 £{{ manor.value66|floatformat }}. {% endif %}
+{% if manor.value86 %}Value in 1086 £{{ manor.value86|floatformat }}. {% endif %}
+{% if manor.valueqr %}Value c. 1070 £{{ manor.valueqr|floatformat }}. {% endif %}
 {%comment %}this needs sorting...{% if manor.value_string %}<li>Value string: {{ manor.value_string }}</li>{% endif %}{%endcomment%}
 {% if manor.villtax %}{{ manor.villtax }} villtax. {% endif %}
 {% if manor.taxedon %}Taxed on {{ manor.taxedon }}. {% endif %}
 {% if manor.payments %}Payments of {{ manor.payments }} {% if manor.paymentsunits %} {{ manor.paymentsunits }}{% endif %}. {% endif %}
 </li>
+{% endif %}
+
 {% if manor.total_people > 0.0 %}
 <li><strong>People: </strong>
-{% if manor.headofmanor %}Head of manor is {{ manor.headofmanor }}. {% endif %}
 {% if manor.villagers %}{{ manor.villagers|floatformat }} villager{{ manor.villagers|pluralize }}. {% endif %}
 {% if manor.smallholders %}{{ manor.smallholders|floatformat }} smallholder{{ manor.smallholders|pluralize }}. {% endif %}
 {% if manor.slaves %}{{ manor.slaves|floatformat }} slave{{ manor.slaves|pluralize }}. {% endif %}
@@ -63,6 +90,7 @@
 {% if manor.burgesses %}{{ manor.burgesses|floatformat }} burgess{{ manor.burgesses|pluralize:",es" }}. {% endif %}
 </li>
 {% endif %}
+
 {% if manor.has_ploughland %}
 <li><strong>Ploughland:</strong>
 {% if manor.ploughlands %}{{ manor.ploughlands|floatformat }} ploughland{{ manor.ploughlands|pluralize }}{% if manor.pcode %} ({{ manor.pcode }}){% endif %}. {% endif %}
@@ -74,21 +102,24 @@
 <!-- {% if manor.totalploughspossible %}<li>Men's plough teams: {{ manor.totalploughspossible }}</li>{% endif %} -->
 </li>
 {% endif %}
+
 {% if manor.has_other_land %}
 <li><strong>Other land: </strong>
 {% if manor.lordsland %}{{ manor.lordsland }} lord's lands. {% endif %}
 {% if manor.newland %}{{ manor.newland }} new lands. {% endif %}
-{% if manor.meadow %}Meadow: {{ manor.meadow }} {{manor.meadowunits}}. {% endif %}
-{% if manor.pasture %}Pasture: {{ manor.pasture }} {{manor.pastureunits}}. {% endif %}
-{% if manor.woodland %}Woodland: {{ manor.woodland }} {{manor.woodlandunits}}. {% endif %}
-{% if manor.mills %}{{ manor.mills }} mill{{ manor.mills|pluralize }}, value {{ manor.millvalue}}. {% endif %}
-{% if manor.fisheries %}{{ manor.fisheries }} fisher{{ manor.fisheries|pluralize:"y,ies" }}. {% endif %}
-{% if manor.salthouses %}{{ manor.salthouses }} salthous{{ manor.salthouses|pluralize:"e,es" }}. </li>{% endif %}
-{% if manor.churches %}{{ manor.churches }} church{{ manor.churches|pluralize:",es" }}. {% endif %}
+{% if manor.meadow %}Meadow {{ manor.meadow }} {{manor.meadowunits}}. {% endif %}
+{% if manor.pasture %}Pasture {{ manor.pasture }} {{manor.pastureunits}}. {% endif %}
+{% if manor.woodland %}Woodland {{ manor.woodland }} {{manor.woodlandunits}}. {% endif %}
+{% if manor.mills %}{{ manor.mills|floatformat }} mill{{ manor.mills|pluralize }}{% if manor.millvalue %}, value {{ manor.millvalue}}{% endif %}. {% endif %}
+{% if manor.fisheries %}{{ manor.fisheries|floatformat }} fisher{{ manor.fisheries|pluralize:"y,ies" }}. {% endif %}
+{% if manor.salthouses %}{{ manor.salthouses|floatformat }} salthous{{ manor.salthouses|pluralize:"e,es" }}. </li>{% endif %}
+{% if manor.churches %}{{ manor.churches|floatformat }} church{{ manor.churches|pluralize:",es" }}. {% endif %}
 {% if manor.churchland %}{{ manor.churchland }} church lands. {% endif %}
 </li>
 {% endif %}
+
 <!-- {% if manor.notes %}<li><strong>Notes on the data</strong>: {{ manor.notes }}</li>{% endif %} -->
+
 {% if manor.has_livestock_1066 %}
 <li><strong>Livestock in 1066: </strong>
 {% if manor.livestock.cobs_1066 %}{{manor.livestock.cobs_1066 }} cobs. {% endif %}
@@ -115,18 +146,52 @@
 {% if manor.livestock.other_1086 %}{{manor.livestock.other_1086 }} {{manor.livestock.other_codes_1086 }}. {% endif %}
 </li>
 {% endif %}
+
+<!-- Owners -->
+
+{{manor.lord66.count}}
+
+{% if manor.lord66.all %}
+<li><strong>Lord in 1066:</strong>
+{% for lord66 in manor.lord66.all %}
+<a href="{% url person lord66.namesidx lord66.name_slug %}">{{ lord66.name }}</a>
+{% endfor %}
+</li>
+{% endif %}
+
+{% if manor.overlord66.all %}
+<li><strong>Lord in 1066:</strong>
+{% for overlord66 in manor.overlord66.all %}
+<a href="{% url person overlord66.namesidx overlord66.name_slug %}">{{ overlord66.name }}</a>
+{% endfor %}
+</li>
+{% endif %}
+
+{% if manor.lord86.all %}
+<li><strong>Lord in 1086:</strong>
+{% for lord86 in manor.lord86.all %}
+<a href="{% url person lord86.namesidx lord86.name_slug %}">{{ lord86.name }}</a>
+{% endfor %}
+</li>
+{% endif %}
+
+{% if manor.teninchief.all %}
+<li><strong>Tenant-in-chief in 1086:</strong>
+{% for teninchief in manor.teninchief.all %}
+<a href="{% url person teninchief.namesidx teninchief.name_slug %}">{{ teninchief.name }}</a>
+{% endfor %}
+</li>
+{% endif %}
+
 </ul>
 {% endfor %}
 
-<div style="float: right;">
-<div id="map_canvas" style="width:40%; min-width: 400px; height: 400px;"></div>
-</div>
-</div>
+
 
 <script type="text/javascript">
   window.onload = show_place('{{place.location.y}}', '{{place.location.x}}', '{{place.vill}}', '{{place.grid}}', '{{place.county.name}}', 12);
 </script>
 
-<div style="clear: both;"></div>
+</div>
 
 {% endblock %}

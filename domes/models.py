@@ -7,13 +7,14 @@ from django.contrib.gis.db import models
 class County(models.Model):
     short_code = models.CharField(max_length=3, primary_key=True)
     name = models.CharField(max_length=100)
+    name_slug = models.SlugField()
     def __unicode__(self):
         return self.name
 
 class Hundred(models.Model):
     name = models.CharField(max_length=100, primary_key=True)
     name_slug = models.SlugField()
-    status = models.CharField(max_length=50, null=True, blank=True)
+    status = models.CharField(max_length=100, null=True, blank=True)
     def __unicode__(self):
         return self.name
     
@@ -22,7 +23,7 @@ class Place(models.Model):
     id = models.IntegerField(primary_key=True) 
     county = models.ForeignKey(County)
     phillimore = models.CharField(max_length=300, null=True, blank=True)
-    hundred = models.CharField(max_length=300, null=True, blank=True)
+    hundred = models.ForeignKey(Hundred, null=True)
     vill = models.CharField(max_length=300)
     vill_slug = models.SlugField()
     area = models.CharField(max_length=300, null=True, blank=True)
@@ -31,10 +32,46 @@ class Place(models.Model):
     os_codes = models.CharField(max_length=120, null=True, blank=True) # 'uncertain', etc
     location = models.PointField(null=True, blank=True)
     objects = models.GeoManager()
-    status = models.CharField(max_length=50, null=True, blank=True)
+    status = models.CharField(max_length=100, null=True, blank=True)
     def __unicode__(self):
         return self.vill
+    @property
+    def value(self):
+        manors = Manor.objects.filter(place__id=self.id)
+        total = {}
+        for manor in manors:
+            if not manor.geld:
+                 continue
+            if manor.gcode in total.keys():
+                 total[manor.gcode] += manor.geld
+            else:
+                 total[manor.gcode] = manor.geld
+        return total
+    @property
+    def raw_value(self):
+        manors = Manor.objects.filter(place__id=self.id)
+        total = 0.0
+        for manor in manors:
+            if manor.geld:
+                total += manor.geld
+        return total
     
+####################################
+# People-related tables
+####################################
+
+# People. From UniqueNames.txt, generated from NamesForAHRC.txt
+class Person(models.Model):
+    namesidx = models.IntegerField(primary_key=True, verbose_name="ID") # these map to LordIdx etc
+    name = models.CharField(max_length=300, verbose_name="Name")     
+    name_slug = models.SlugField()        
+    namecode = models.CharField(max_length=5, null=True, blank=True, verbose_name="Name code")  
+    gendercode = models.CharField(max_length=10, null=True, blank=True, verbose_name="Gender code")  
+    churchcode = models.CharField(max_length=100, null=True, blank=True, verbose_name="Church code")  
+    xrefs = models.CharField(max_length=300, null=True, blank=True, verbose_name="Cross-refs")
+    def __unicode__(self):
+        return self.name
+
 ####################################
 # Manor-related tables
 ####################################
@@ -42,6 +79,7 @@ class Place(models.Model):
 # Everything hangs off this. From ManorsForAHRC.txt
 class Manor(models.Model):
     structidx = models.IntegerField(primary_key=True)  
+    place = models.ManyToManyField(Place, null=True, related_name="place")
     county = models.ForeignKey(County)  
     phillimore = models.CharField(max_length=100, null=True, blank=True, verbose_name="Phillimore") 
     headofmanor = models.CharField(max_length=100, null=True, blank=True, verbose_name="Head of manor [manorial centre of group, used for aggregating data]")
@@ -117,6 +155,10 @@ class Manor(models.Model):
     other_code_1086 = models.CharField(max_length=100, null=True, blank=True)  
     other_1066 = models.IntegerField(null=True, blank=True)  
     other_codes_1066 = models.CharField(max_length=100, null=True, blank=True)
+    lord66 = models.ManyToManyField(Person, null=True, related_name="lord66")
+    overlord66 = models.ManyToManyField(Person, null=True, related_name="overlord66")
+    lord86 = models.ManyToManyField(Person, null=True, related_name="lord86")
+    teninchief = models.ManyToManyField(Person, null=True, related_name="teninchief")
     def total_people(self):
         total_people = self.villagers + self.smallholders + self.slaves + self.femaleslaves \
             + self.freemen + self.free2men + self.priests \
@@ -144,45 +186,15 @@ class Manor(models.Model):
             or self.sheep_1086 or self.goats_1086 or self.beehives_1086 \
             or self.wild_mares_1086 or self.other_1086 or self.other_code_1086):
             return True
-	    return False
+        return False  
 
 # Place references - links Manors and Places. From ByPlaceForAHRC.txt
-class PlaceRef(models.Model):
-    manor = models.ForeignKey(Manor)
-    place = models.ForeignKey(Place)
-    holding = models.FloatField(null=True, blank=True)
-    units = models.CharField(max_length=100, null=True, blank=True)
+# class PlaceRef(models.Model):
+#     manor = models.ForeignKey(Manor)
+#     place = models.ForeignKey(Place)
+#     holding = models.FloatField(null=True, blank=True)
+#     units = models.CharField(max_length=100, null=True, blank=True)
 
-####################################
-# People-related tables
-####################################
-
-# People. From UniqueNames.txt, generated from NamesForAHRC.txt
-class Person(models.Model):
-    namesidx = models.IntegerField(primary_key=True, verbose_name="ID") # these map to LordIdx etc
-    name = models.CharField(max_length=300, verbose_name="Name")     
-    name_slug = models.SlugField()        
-    namecode = models.CharField(max_length=5, null=True, blank=True, verbose_name="Name code")  
-    gendercode = models.CharField(max_length=10, null=True, blank=True, verbose_name="Gender code")  
-    churchcode = models.CharField(max_length=100, null=True, blank=True, verbose_name="Church code")  
-    xrefs = models.CharField(max_length=300, null=True, blank=True, verbose_name="Cross-refs")
-    def __unicode__(self):
-        return self.name
-
-# Owner in 1066. From TREForAHRC.txt
-class TreOwner(models.Model):
-    tre_id = models.IntegerField(primary_key=True)
-    manor = models.ForeignKey(Manor) 
-    overlord66 = models.ForeignKey(Person, null=True, related_name="overlord66")
-    lord66 = models.ForeignKey(Person, null=True, related_name="lord66")
-
-# Owner in 1086. From TRWForAHRC.txt
-class TrwOwner(models.Model):
-    trw_id = models.IntegerField(primary_key=True)
-    manor = models.ForeignKey(Manor) 
-    teninchief = models.ForeignKey(Person, null=True, related_name="teninchief")
-    lord86 = models.ForeignKey(Person, null=True, related_name="lord86")
-    demesne86 = models.CharField(max_length=30, null=True, blank=True)
 
 ################################################
 # Image-related tables
@@ -197,9 +209,19 @@ class Image(models.Model):
     y1 = models.IntegerField(null=True, blank=True)
     x2 = models.IntegerField(null=True, blank=True)
     y2 = models.IntegerField(null=True, blank=True)
-
-class UniqueImage(models.Model):
-    image = models.CharField(max_length=30, null=True, blank=True) #filename 
+    def county(self):
+       filepath = self.image.split("/")[0]
+       county = County.objects.get(short_code__iexact=filepath)
+       return county
+    def fullnum(self): # image number with leading zeroes
+       file_array = self.image.split("/")[1]
+       file_array = file_array.split(".")[0]
+       return file_array
+    def filenum(self): # image number with no leading zeroes
+       file_array = self.image.split("/")[1]
+       file_array = file_array.split(".")[0]
+       file_array = file_array.lstrip("0")
+       return file_array
 
 ################################################
 # Email addresses of interested people

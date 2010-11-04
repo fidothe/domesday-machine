@@ -10,88 +10,89 @@
 <h1>Person: {{ person.name }}</h1>
 </div>
 
-<div class="content col left">
+<div class="content">
+
+<div id="divMap">
+<div id="map_canvas" style="width:400px; height:400px;"></div>
+</div>
+</div>
 
 <p>Places owned by <strong>{{ person.name.upper }}</strong>.</p>
 
-{% if person.namecode %}Name code: {{ person.namecode }}{% endif %}
-{% if person.gendercode %}Gender: {{ person.gendercode }}{% endif %}
-{% if person.churchcode %}Church affiliation:  {{ person.churchcode }}{% endif %}
-{% if person.xrefs %}References:  {{ person.xrefs }}{% endif %}
+<ul>
+{% if person.namecode %}<li><strong>Name code:</strong> {{ person.namecode }}</li>{% endif %}
+{% if person.gendercode %}<li><strong>Gender:</strong> {{ person.gendercode }}{% endif %}
+{% if person.churchcode %}<li><strong>Church affiliation:</strong> {{ person.churchcode }}{% endif %}
+{% if person.xrefs %}<li><strong>References:</strong>  {{ person.xrefs }}{% endif %}
+</ul>
 
-{% if lord66_places or overlord66_places %}<h2>Before the Conquest</h2>{% endif %}
-
-{% if lord66_places %}
+{% if person.lord66.all or person.overlord66.all %}<h2>Before the Conquest</h2>{% endif %}
+{% if person.lord66.all %}
 <h3>Lord in 1066:</h3>
 <ul>
-{% for place in lord66_places %}
+{% for manor in person.lord66.all %}
+{% for place in manor.place.all %}
 <li> 
-<a href="/place/{{ place.grid }}/{{ place.vill }}">{{ place.vill }}</a>, {{ place.hundred }}, {{ place.county }}
+<a href="{% url place place.grid place.vill_slug %}">{{ place.vill }}</a>, {{ place.hundred }}, {{ place.county }}
 </li>
+{% endfor %}
 {% endfor %}
 </ul>
 {% endif %}
-
-{% if overlord66_places %}
-<h3>Overlord in 1066</h3>
+{% if person.overlord66.all %}
+<h3>Overlord in 1066:</h3>
 <ul>
-{% for place in overlord66_places %}
+{% for manor in person.overlord66.all %}
+{% for place in manor.place.all %}
 <li> 
-<a href="/place/{{ place.grid }}/{{ place.vill }}">{{ place.vill }}</a>, {{ place.hundred }}, {{ place.county }} 
+<a href="{% url place place.grid place.vill_slug %}">{{ place.vill }}</a>, 
+<a href="{% url hundred place.hundred.name_slug %}">{{ place.hundred }}</a>, {{ place.county }}
 </li>
+{% endfor %}
 {% endfor %}
 </ul>
 {% endif %}
 
-{% if lord86_places or teninchief86_places %}<h2>After the Conquest</h2>{% endif %}
-
-
-{% if lord86_places %}
-<h3>Lord in 1086</h3>
+{% if person.lord86.all or person.teninchief.all %}<h2>After the Conquest</h2>{% endif %}
+{% if person.lord86.all %}
+<h3>Lord in 1066:</h3>
 <ul>
-{% for place in lord86_places %}
-<li>
-<a href="/place/{{ place.grid }}/{{ place.vill }}">{{ place.vill }}</a>, {{ place.hundred }}, {{ place.county }} 
-</li>
-{% endfor %}
-</ul>
-{% endif %}
-
-{% if teninchief86_places %}
-<h3>Tenant-in-chief in 1086</h3>
-<ul>
-{% for place in teninchief86_places %}
+{% for manor in person.lord86.all %}
+{% for place in manor.place.all %}
 <li> 
-<a href="/place/{{ place.grid }}/{{ place.vill }}">{{ place.vill }}</a>, {{ place.hundred }}, {{ place.county }} 
+<a href="{% url place place.grid place.vill_slug %}">{{ place.vill }}</a>, 
+<a href="{% url hundred place.hundred.name_slug %}">{{ place.hundred }}</a>, {{ place.county }}
 </li>
+{% endfor %}
 {% endfor %}
 </ul>
 {% endif %}
+{% if person.teninchief.all %}
+<h3>Overlord in 1066:</h3>
+<ul>
+{% for manor in person.teninchief.all %}
+{% for place in manor.place.all %}
+<li> 
+<a href="{% url place place.grid place.vill_slug %}">{{ place.vill }}</a>, {{ place.hundred }}, {{ place.county }}
+</li>
+{% endfor %}
+{% endfor %}
+</ul>
+{% endif %}
+
 
 </div>
 
-<div class="content col right">
-<div id="map_canvas" style="width: 100%; height: 400px"></div>
-</div>
-
-<div style="clear: both;"></div>
 
 
 <script type='text/javascript'>
 window.onload = set_up_map();
-{% for place in lord66_places %}
-addMarker('{{place.lat}}', '{{place.lon}}', '{{place.grid}}', '{{place.vill}}', '{{place.hundred}}', '{{place.county}}', '{{place.holding}}', '{{place.units}}', '0066FF' );
+{% for manor in person.lord66.all %}
+{% for place in manor.place.all %}
+//008CFF
+addMarker('{{place.location.y}}', '{{place.location.x}}', '{{place.grid}}', '{{place.vill}}', '{{place.vill_slug}}', '{{place.hundred}}', '{{place.county}}', '{{place.holding}}', '{{place.units}}', '0066FF' );
 {% endfor %}
-{% for place in overlord66_places %}
-addMarker('{{place.lat}}', '{{place.lon}}', '{{place.grid}}', '{{place.vill}}', '{{place.hundred}}', '{{place.county}}', '{{place.holding}}', '{{place.units}}', '0066FF' );
 {% endfor %}
-{% for place in lord86_places %}
-addMarker('{{place.lat}}', '{{place.lon}}', '{{place.grid}}', '{{place.vill}}', '{{place.hundred}}', '{{place.county}}', '{{place.holding}}', '{{place.units}}', '008CFF' );
-{% endfor %}
-{% for place in teninchief86_places %}
-addMarker('{{place.lat}}', '{{place.lon}}', '{{place.grid}}', '{{place.vill}}', '{{place.hundred}}', '{{place.county}}', '{{place.holding}}', '{{place.units}}', '008CFF' );
-{% endfor %}
-
 </script>
 
 {% endblock %}

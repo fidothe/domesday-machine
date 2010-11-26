@@ -3,7 +3,6 @@ from django import template
 
 register = template.Library()
 
-@register.inclusion_tag('domes/templatetags/gravatar.html')
 def show_gravatar(email, size=48):
     #default = "http://localhost:8000{ settings.MEDIA_URL }}/images/lion1.gif"
     url = "http://www.gravatar.com/avatar.php?"
@@ -13,3 +12,5 @@ def show_gravatar(email, size=48):
         'size': str(size)
     })
     return {'gravatar': {'url': url, 'size': size}}
+
+register.filter('show_gravatar', show_gravatar)

@@ -1,8 +1,8 @@
 {% extends "domes/base.html" %}
 
-{% block title %}Domesday Book: {{county }}, page {{ number_clean}}{% endblock %}
-{% block description %}Domesday Book: {{county }}, page {{ number_clean}} {% endblock %}
-{% block nav-class %}nav-people{% endblock %}
+{% block title %}Domesday Book: {{county.name }}, page {{ number_clean}}{% endblock %}
+{% block description %}Domesday Book: {{county.name }}, page {{ number_clean}} {% endblock %}
+{% block nav-class %}nav-places{% endblock %}
 
 {% block content %}
 
@@ -24,10 +24,9 @@
    alt="{{ place.vill }}" 
 />
 {% else %}
-<area shape="rect" coords="{{image.x1}},{{image.y1}},{{image.x2}},{{image.y2}}" 
-   href="{% url place 'unknown' 'unknown' %}" 
-   title="Unknown {{ image.manor.structidx }}"
-   alt="Unknown {{ image.manor.structidx }}" 
+<area shape="rect" coords="{{image.x1}},{{image.y1}},{{image.x2}},{{image.y2}}"  
+   title="Unknown place {{ image.manor.structidx }}"
+   alt="Unknown place {{ image.manor.structidx }}" 
 />
 {% endif %}
 {% endwith %}

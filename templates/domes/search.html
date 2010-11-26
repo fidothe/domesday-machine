@@ -1,6 +1,8 @@
 {% extends "domes/base.html" %}
 
 {% block title %}Search{% endblock %}
+{% block description %}Search for places in the Domesday Book{% endblock %}
+{% block nav-class %}nav-places{% endblock %}
 
 {% block content %}
 
@@ -9,7 +11,13 @@
 <p>Search for Domesday Book entries near a English placename or postcode</p>
 </div>
 
-<div class="content col left">
+
+<div class="content">
+
+<div id="divMap">
+<div id="map_canvas" style="width:400px; height:400px;"></div>
+</div>
+</div>
 	
 {% if geo %}
 <p>Places in the Domesday Book near <strong>{{ geo }}</strong> (zoom out to see more):</p>
@@ -21,17 +29,10 @@
 
 </div>
 
-<div class="content col right">
-<div id="map_canvas" style="width: 100%; height: 400px"></div>
-</div>
-<div style="clear: both;"></div>
-
 
 <script type='text/javascript'>
-
 var openInfoWindow;
 var geocoder;
-
 //set up the initial map
 var latlng = new google.maps.LatLng(51.0629403, -1.3165037);
 var myOptions = {
@@ -41,7 +42,6 @@ var myOptions = {
   mapTypeId: google.maps.MapTypeId.ROADMAP
 };
 map = new google.maps.Map(document.getElementById("map_canvas"),myOptions);
-
 {% if geo %}
 geocoder = new google.maps.Geocoder();
 var address = '{{geo}}'; //"window.location.querystring"moddershall;
@@ -62,11 +62,7 @@ if (geocoder) {
     }
   });
 }
-
 {% endif %}
-
 </script>
 
 {% endblock %}
-
-

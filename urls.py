@@ -13,7 +13,7 @@ urlpatterns = patterns('',
     url(r'map/$', 'domes.views.map', name="map"),
     # Places
     url(r'^county/$', 'domes.views.all_counties', name="counties"),
-    url(r'^county/(?P<county_name>.+)/$', 'domes.views.county', name="county"),
+    url(r'^county/(?P<county_slug>.+)/$', 'domes.views.county', name="county"),
     url(r'^place/$', 'domes.views.all_places', name="all_places"),
     url(r'^place/(?P<grid>[A-Za-z0-9]+)/(?P<vill_slug>.+)/$', 'domes.views.place', name="place"),
     url(r'^hundred/(?P<hundred_name_slug>.+)/$', 'domes.views.hundred', name="hundred"),

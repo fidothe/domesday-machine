@@ -1,48 +1,189 @@
 {% extends "domes/base.html" %}
 
-{% block title %}Translate{% endblock %}
+{% block title %}Book{% endblock %}
+{% block description %}Facsimile of the Domesday Book{% endblock %}
+{% block nav-class %}nav-book{% endblock %}
 
 {% block content %}
 <div class="page_title">
-<h1>Translate</h1>
+<h1>Book</h1>
 </div>
 
 <div class="content">
-<style type="text/css" media="all">@import "{{ MEDIA_URL }}css/annotation.css";</style>
-<script type="text/javascript" src="{{ MEDIA_URL }}js/jquery-1.3.2.js"></script>
-<script type="text/javascript" src="{{ MEDIA_URL }}js/jquery-ui-1.7.1.js"></script>
-<script type="text/javascript" src="{{ MEDIA_URL }}js/jquery.annotate.js"></script>
 
-<p>Just Middlesex to start with.</p>
-
-<img id="toAnnotate" src="{{MEDIA_URL}}images/{{super_struct.image_name }}" height="2246" width="1664" /><br/>
-
-<script language="javascript">
-		$(window).load(function() {
-			$("#toAnnotate").annotateImage({
-				editable: false,
-				useAjax: false,
-				notes: [ 
-				{% for entry in super_struct.entries %}
-				{ "top": {{entry.top}},
-				   "left": {{entry.left}},
-				   "width": {{entry.width}},
-				   "height": {{entry.height}},
-				   "text": "{{entry.places.0 }}",
-				   "id": "{{entry.structidx}}",
-				   "editable": false },
-				{% endfor %}
-				]
-			});
-		});
+<link rel="stylesheet" type="text/css" href="{{ MEDIA_URL }}css/bx_styles/bx_styles.css" />
+<script src="{{ MEDIA_URL }}js/jquery.bxSlider.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+    jQuery(document).ready(function(){
+       jQuery('#slider1').bxSlider({
+            displaySlideQty: 8,
+            moveSlideQty: 4         
+        });
+    });
+    jQuery(document).ready(function(){
+       jQuery('#slider2').bxSlider({
+            displaySlideQty: 1,
+            moveSlideQty: 1         
+        });
+    });
+	//alert('hello world');
 </script>
+
+
+<div id="slider">
+<ul id="slider1" class="multiple"> 
+<li><img src="{{ MEDIA_URL }}images/Bdf/01.png" width="80" height="110" class="highlight" />
+<div class="image-caption" class="image-caption">Bedfordshire<br/>(20 pages)</div></li> 
+<li><img src="{{ MEDIA_URL }}images/Brk/01.png" width="80" height="110" />
+<div class="image-caption">Berkshire<br/>(16 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Buk/01.png" width="80" height="110" />
+<div class="image-caption">Buckinghamshire<br/>(21 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Cam/01.png" width="80" height="110" />
+<div class="image-caption">Cambridgeshire<br/>(28 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Chs/01.png" width="80" height="110" />
+<div class="image-caption">Cheshire<br/>(17 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Cor/01.png" width="80" height="110" />
+<div class="image-caption">Cornwall<br/>(11 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Dby/01.png" width="80" height="110" />
+<div class="image-caption">Derbyshire<br/>(14 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Dev/01.png" width="80" height="110" />
+<div class="image-caption">Devonshire<br/>(38 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Dor/01.png" width="80" height="110" />
+<div class="image-caption">Dorsetshire<br/>(20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Gls/01.png" width="80" height="110" />
+<div class="image-caption">Gloucestershire<br/>(18 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Ham/01.png" width="80" height="110" />
+<div class="image-caption">Hampshire<br/>(34 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/HC/11.png" width="80" height="110" />
+<div class="image-caption">HC??<br/>(2 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Hef/01.png" width="80" height="110" />
+<div class="image-caption">Herefordshire<br/>(18 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Hrt/01.png" width="80" height="110" />
+<div class="image-caption">Hertfordshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Hun/01.png" width="80" height="110" />
+<div class="image-caption">Huntingdonshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Ken/01.png" width="80" height="110" />
+<div class="image-caption">Kent (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/LC/75.png" width="80" height="110" />
+<div class="image-caption">LC (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Lec/01.png" width="80" height="110" />
+<div class="image-caption">Leicestershire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Lin/01.png" width="80" height="110" />
+<div class="image-caption">Lincolshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Mdx/01.png" width="80" height="110" />
+<div class="image-caption">Middlesex (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Nth/01.png" width="80" height="110" /><div class="image-caption">Northamptonshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Ntt/01.png" width="80" height="110" /><div class="image-caption">Nottinghamshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Oxf/01.png" width="80" height="110" /><div class="image-caption">Oxfordshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Rut/01.png" width="80" height="110" /><div class="image-caption">Rutland (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Shr/01.png" width="80" height="110" /><div class="image-caption">Shropshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Som/01.png" width="80" height="110" /><div class="image-caption">Somerset (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Sts/01.png" width="80" height="110" /><div class="image-caption">Staffordshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Sur/01.png" width="80" height="110" /><div class="image-caption">Surrey (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Sus/01.png" width="80" height="110" /><div class="image-caption">Sussex (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/War/01.png" width="80" height="110" /><div class="image-caption">Warwickshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Wil/01.png" width="80" height="110" /><div class="image-caption">Wiltshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Wor/01.png" width="80" height="110" /><div class="image-caption">Worcestershire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/YB/01.png" width="80" height="110" /><div class="image-caption">YB (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/YC/01.png" width="80" height="110" /><div class="image-caption">YC (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/Yks/01.png" width="80" height="110" /><div class="image-caption">Yorkshire (20 pages)</div></li>
+<li><img src="{{ MEDIA_URL }}images/YS/01.png" width="80" height="110" /><div class="image-caption">YS (20 pages)</div></li>
+</ul> 
+</div>
+
+<h3>Bedfordshire, page 2</h3>
+
+<div id="slider">
+<ul id="slider2" class="multiple">
+<li>
+<img src="{{MEDIA_URL}}images/Bdf/02_half.png" title="" class="page" usemap="#domesday"  />
+<map name="domesday"> 
+<area shape="rect" coords="91, 81, 428, 361" 
+   href="/place/TL0123/houghton-regis/" 
+   title="Houghton [Regis]"
+   alt="Houghton [Regis]" 
+/> 
+<area shape="rect" coords="106, 337, 423, 504" 
+   href="/place/SP9922/sewell/" 
+   title="Sewell"
+   alt="Sewell" 
+/> 
+<area shape="rect" coords="96, 466, 436, 661" 
+   href="/place/TL0823/biscot/" 
+   title="Biscot"
+   alt="Biscot" 
+/> 
+<area shape="rect" coords="75, 639, 426, 815" 
+   href="/place/SP9720/eaton-bray/" 
+   title="Eaton [Bray]"
+   alt="Eaton [Bray]" 
+/> 
+<area shape="rect" coords="105, 799, 424, 923" 
+   href="/place/SP9933/eversholt/" 
+   title="Eversholt"
+   alt="Eversholt" 
+/> 
+<area shape="rect" coords="458, 94, 639, 121" 
+   href="/place/SP9730/milton-bryan/" 
+   title="Milton [Bryan]"
+   alt="Milton [Bryan]" 
+/> 
+<area shape="rect" coords="108, 908, 429, 1012" 
+   href="/place/SP9730/milton-bryan/" 
+   title="Milton [Bryan]"
+   alt="Milton [Bryan]" 
+/> 
+<area shape="rect" coords="450, 109, 785, 209" 
+   href="/place/TL0859/bolnhurst/" 
+   title="Bolnhurst"
+   alt="Bolnhurst" 
+/> 
+<area shape="rect" coords="450, 196, 783, 282"  
+   title="Unknown place 9448"
+   alt="Unknown place 9448" 
+/> 
+<area shape="rect" coords="450, 272, 778, 396" 
+   href="/place/SP9849/stagsden/" 
+   title="Stagsden"
+   alt="Stagsden" 
+/> 
+<area shape="rect" coords="450, 381, 775, 488" 
+   href="/place/SP9555/carlton/" 
+   title="Carlton"
+   alt="Carlton" 
+/> 
+<area shape="rect" coords="450, 474, 788, 562" 
+   href="/place/SP9452/turvey/" 
+   title="Turvey"
+   alt="Turvey" 
+/> 
+<area shape="rect" coords="450, 552, 794, 697" 
+   href="/place/TL0955/wilden/" 
+   title="Wilden"
+   alt="Wilden" 
+/> 
+<area shape="rect" coords="439, 680, 787, 825" 
+   href="/place/TL0063/knotting/" 
+   title="Knotting"
+   alt="Knotting" 
+/> 
+<area shape="rect" coords="448, 811, 793, 940" 
+   href="/place/TL0265/melchbourne/" 
+   title="Melchbourne"
+   alt="Melchbourne" 
+/> 
+<area shape="rect" coords="451,922,789,1001" 
+   href="/place/unknown/lower-and-upper-dean/" 
+   title="[Lower and Upper] Dean"
+   alt="[Lower and Upper] Dean" 
+/> 
+</map>
+</li>
+</ul>
 </div>
 
 
-{% for entry in super_struct.entries %}
-{{ entry.structidx }}<br/>
-{% endfor %}
-
+</div>
 <div style="clear: both;"></div>
 
 {% endblock %}

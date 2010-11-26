@@ -7,11 +7,12 @@
 	<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 	<link rel="stylesheet" href="{{ MEDIA_URL }}css/joint.css" />
     <script src="http://maps.google.com/maps/api/js?sensor=false&amp;region=GB&amp;key={{ MAPS_API_KEY }}" type="text/javascript"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
 	<script type="text/javascript" src="{{ MEDIA_URL }}js/markerclusterer.js"></script>           		                                
 	<script type="text/javascript" src="{{ MEDIA_URL }}js/domesday.js"></script>
     <script type="text/javascript" src="{{ MEDIA_URL }}js/domesday.js"></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
     <script src="{{ MEDIA_URL }}js/jquery.maphilight.min.js"></script>
+    <script src="{{ MEDIA_URL }}js/jquery.qtip-1.0.0-rc3.min.js"></script>
 	{% if has_image %}
     <script type="text/javascript" src="{{ MEDIA_URL }}js/thickbox.js"></script>
     <link rel="stylesheet" href="{{ MEDIA_URL }}css/thickbox.css" type="text/css" media="screen" />
@@ -47,10 +48,11 @@
 	<!-- main navigation menu -->
 	<div id="divMenu">
 	<ul>
+	<li id="nav-book"><a href="{% url book %}">Book</a></li>❧
 	<li id="nav-places"><a href="{% url all_places %}">Places</a></li>❧
-	<li id="nav-translate"><a href="{% url translate %}">Translate</a></li>❧
-	<li id="nav-about"><a href="{% url about %}">About</a></li>❧
-	<li id="nav-contact"><a href="/contact">Contact</a></li>
+	<li id="nav-people"><a href="{% url all_people %}">People</a></li>❧
+	<li id="nav-stats"><a href="{% url stats %}">Stats</a></li>❧
+	<li id="nav-translate"><a href="{% url translate %}">Translate</a></li>
 	</ul>
 	{% if not no_search_form %}
 	<!-- search form -->
@@ -88,6 +90,7 @@
 	<footer>
 	<div id="divFooter">
 	<div id="divCopyright">
+	 <a href="{% url about %}">About</a></li> ❧ <a href="/contact">Contact</a> ❧ 
 	Site by <a href="http://www.twitter.com/darkgreener">Anna Powell-Smith</a>. Domesday data created by <a href="/about#data">Professor John Palmer, University of Hull</a>.
 	</div>
 	</div>

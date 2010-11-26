@@ -1,15 +1,16 @@
-from django.http import HttpResponseRedirect, HttpResponse, Http404
-from django.shortcuts import render_to_response, get_object_or_404
-from django.template import Template, RequestContext, loader, Context
+import re
+import urllib2
+from django.conf import settings
 from django.contrib.gis.geos import Point, Polygon
 from django.contrib.gis.geos import fromstr
 from django.contrib.gis.measure import D
-from django.conf import settings
-from domes.models import *
-from domes.forms import EmailSignupForm
 from django.db.models import Count, Sum
-import re, urllib2, random
+from django.http import HttpResponseRedirect, HttpResponse, Http404
+from django.shortcuts import render_to_response, get_object_or_404
+from django.template import Template, RequestContext, loader, Context
 from django.utils import simplejson
+from domes.forms import EmailSignupForm
+from domes.models import *
 import util
 
 ################################
@@ -81,7 +82,8 @@ def markers_within_bounds(request):
         if place.hundred:
             place_dict['hundred'] = place.hundred.name
             place_dict['hundred_slug'] = place.hundred.name_slug
-        place_dict['county'] = place.county.name
+        county = place.county.all()[0].name
+        place_dict['county'] = county
         place_dict['value'] = place.value
         place_dict['distance'] = str(place.distance/1000).rstrip(" m")
         place_dict['raw_value'] = place.raw_value
@@ -97,7 +99,8 @@ def map(request):
 ################################
 
 def all_images(request):
-    return render_to_response('domes/image.html', { }, context_instance = RequestContext(request))
+    return render_to_response('domes/image.html', { }, \
+                context_instance = RequestContext(request))
 
 def image(request, county, number):
     number = urllib2.unquote(number)
@@ -106,7 +109,9 @@ def image(request, county, number):
     county_object = get_object_or_404(County, name_slug=county_slug)
     filepath = "%s/%s.png" % (county_object.short_code.lower(), number)
     images = Image.objects.filter(image=filepath)
-    return render_to_response('domes/image.html', { 'images': images, 'county': county, 'number_clean' : number_clean, 'filepath' : filepath }, context_instance = RequestContext(request))
+    return render_to_response('domes/image.html', { 'images': images, \
+        'county': county, 'number_clean' : number_clean, \
+        'filepath' : filepath }, context_instance = RequestContext(request))
 
 ################################
 # Individual places and people
@@ -115,28 +120,38 @@ def place(request, grid, vill_slug):
     vill_slug = urllib2.unquote(vill_slug)
     grid = urllib2.unquote(grid)
     place = get_object_or_404(Place, grid=grid, vill_slug=vill_slug)
+    areas = place.area.all()
+    counties = place.county.all()
     manors = Manor.objects.filter(place__id=place.id)
-    #total_holding = util.get_holding(place.placeref_set.all())
-    total_holding = "total_holding"
-    return render_to_response('domes/place.html', { 'place': place, 'manors': manors, 'total_holding': total_holding }, context_instance = RequestContext(request))
+    return render_to_response('domes/place.html', { 'place': place, \
+             'areas': areas, 'counties': counties, 'manors': manors }, \
+              context_instance = RequestContext(request))
 
-def county(request, county_Person):
-    county_Person = urllib2.unquote(county_Person)
-    query = "SELECT placeidx, hundred, grid, holding, units, vill, count(*) AS count FROM domes_place WHERE county=%s AND vill!='-' GROUP BY grid, vill"
-    params = (county_Person,)
-    places = Place.objects.raw(query, params)
-    return render_to_response('domes/county.html', { 'county_Person' : county_Person, 'places' : places, 'has_map' : True,  }, context_instance = RequestContext(request))
+def county(request, county_slug):
+    place = get_object_or_404(County, name_slug=county_slug)
+    places = Place.objects.filter(county=county)
+    return render_to_response('domes/county.html', { 'places' : places  }, \
+        context_instance = RequestContext(request))
 
 def hundred(request, hundred_name_slug):
     hundred_name_slug = urllib2.unquote(hundred_name_slug)
     hundred = Hundred.objects.get(name_slug=hundred_name_slug)
-    return render_to_response('domes/hundred.html', { 'hundred': hundred }, context_instance = RequestContext(request))
+    places = Place.objects.filter(hundred=hundred)
+    if places.collect():
+        centre = places.collect().centroid
+    else:
+        centre = None
+    return render_to_response('domes/hundred.html', { 'hundred': hundred, \
+          'centre': centre }, context_instance = RequestContext(request))
 
+# To do: work out how to get places here. 
 def person(request, namesidx, name_slug):
     person = Person.objects.get(namesidx=namesidx)
-    return render_to_response('domes/person.html', { 'person' : person }, context_instance = RequestContext(request))
+    lord66_manors = Manor.objects.filter(lord66=person)
+    return render_to_response('domes/person.html', { 'person' : person }, \
+       context_instance = RequestContext(request))
 
-################################
+################################ 
 # Search
 ################################
 def search(request):
@@ -146,7 +161,8 @@ def search(request):
          has_map = True
     else: 
          has_map = False
-    return render_to_response('domes/search.html', { 'geo' : geo, 'text' : text, 'has_map' : has_map, }, context_instance = RequestContext(request))
+    return render_to_response('domes/search.html', { 'geo' : geo, \
+      'text' : text, 'has_map' : has_map, }, context_instance = RequestContext(request))
 
 ################################
 # Statistics listings
@@ -180,30 +196,7 @@ def translate(request):
     return render_to_response('domes/translate.html', {}, context_instance = RequestContext(request))
 
 def book(request):
-    image_entries = Image.objects.filter(county="MDX", image="mdx/05.png")
-    super_struct = {}
-    super_struct['image_Person'] = "mdx/05.png"
-    annotate_array = []
-    annotate = {}
-    for image_entry in image_entries: 
-        annotate['structidx'] = image_entry.structidx
-       # print image_entry.structidx
-        annotate['top'] = image_entry.y1
-        annotate['left'] = image_entry.x1
-        annotate['width'] = (image_entry.x2 - image_entry.x1)
-        annotate['height'] = (image_entry.y2 - image_entry.y1)
-        associated_places = Place.objects.filter(structidx=image_entry.structidx)
-        place_array = []
-        for associated_place in associated_places:
-            place_array.append(associated_place.vill)
-            print associated_place.vill
-        annotate['places'] = place_array
-      #  print 'annotate', annotate
-        annotate_array.append(annotate)
-        print 'appending to array...'
-        print 'annotate_array', annotate_array
-    super_struct['entries'] = annotate_array
-    return render_to_response('domes/translate.html', { 'super_struct' : super_struct, }, context_instance = RequestContext(request))
+    return render_to_response('domes/book.html', { }, context_instance = RequestContext(request))
 
 def forum(request):
     return render_to_response('domes/forum.html', { }, context_instance = RequestContext(request))

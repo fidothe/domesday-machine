@@ -2,66 +2,71 @@ var map;
 var place_name = "";
 var infowindow = new google.maps.InfoWindow(); 
 
-function set_up_map() {
-    var latlng = new google.maps.LatLng(52.36187505907603, -1.614990234375);
+// Set up a basic map. Optionally supply a centre:
+// otherwise default to centre of Britain.
+function set_up_map(centre_lat,centre_lng) {
+	var latlng;
+	var zoom_level;
+    if (!centre_lat && !centre_lng) {
+        latlng = new google.maps.LatLng(52.36187505907603, -1.614990234375);
+        zoom_level = 6;
+    } else {
+        latlng = new google.maps.LatLng(centre_lat, centre_lng);	
+        zoom_level = 8;
+    }
     var myOptions = {
-      zoom: 6,
+      zoom: zoom_level,
       scrollwheel: false,
       center: latlng,
-      mapTypeId: google.maps.MapTypeId.ROADMAP
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      maxZoom: zoom_level+1,
+      minZoom: zoom_level-1
     };
     map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 }
 
-//add an individual marker directly to the map
-function addMarker(lat, lng, grid, vill, vill_slug, hundred, county, raw_value, colour) {
-	var map_marker = createMarker(lat, lng, grid, vill, vill_slug, hundred, county, raw_value, colour);
-    map_marker.setMap(map);
-}
 
-//add a marker for a particular place, and fill in other markers inside bounds
-//TODO: use cluster if you zoom out far enough
+// We want to show a particular place. Add a marker for that place,
+// and fill in other markers inside the map's bounds.
 function show_place (lat, lng, place_name, grid, county, zoom_level) {
-    //alert(lat + lng +  place_name +  grid +  county +  zoom_level);
 	var latlng = new google.maps.LatLng(lat, lng);
     var myOptions = {
       zoom: zoom_level,
 	  scrollwheel: false,
       center: latlng,
-      mapTypeId: google.maps.MapTypeId.ROADMAP
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      maxZoom: zoom_level+1,
+      minZoom: zoom_level-1
     };
     map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 	var marker = new google.maps.Marker({
 	      position: latlng,
-	      title:"Hello World!"
+	      map: map,
+	      title: place_name,
+	      zIndex: 5
 	  });
-	  // To add the marker to the map, call setMap();
-	  marker.setMap(map);
+	// When the map boundaries move, add new markers within the bounds.
 	google.maps.event.addListener(map, 'tilesloaded', function() {
       var bounds = map.getBounds();
       $.getJSON("/markers_within_bounds/", { swLat:bounds.getSouthWest().lat(), swLng:bounds.getSouthWest().lng(),neLat:bounds.getNorthEast().lat(), neLng:bounds.getNorthEast().lng(), centreLat:map.getCenter().lat(), centreLng:map.getCenter().lng() }, function(json){
         for (i=0;i<json.length;i++) {
 	      if ((json[i].grid != grid) && (json[i].vill != place_name)) {
-		      var map_marker = createMarker(json[i].lat, json[i].lng, json[i].grid, json[i].vill, json[i].vill_slug, json[i].hundred, json[i].county, json[i].raw_value);
-		      map_marker.setMap(map);
+		      var map_marker = addMarker(json[i].lat, json[i].lng, json[i].grid, json[i].vill, json[i].vill_slug, json[i].hundred, json[i].county, json[i].raw_value);
+		      //map_marker.setMap(map);
 	      }
         }
-        var marker = new google.maps.Marker({
-           position: latlng, 
-           map: map, 
-           title: place_name,
-           zIndex: 5
-         });
        });
     });
 }
 
+// Turn a long float into a readable number.
 function roundNumber(num) {
 	var result = Math.round(num*Math.pow(10,1))/Math.pow(10,1);
 	return result;
 }
 
-// text for search results page
+// Create text for search results page.
+// And add markers within bounds.
 function search_page(results_html) {
     results_html.innerHTML = "Loading results...";
     var html_set = false;
@@ -70,13 +75,12 @@ function search_page(results_html) {
       var bounds = map.getBounds();
       $.getJSON("/markers_within_bounds/", { swLat:bounds.getSouthWest().lat(), swLng:bounds.getSouthWest().lng(),neLat:bounds.getNorthEast().lat(), neLng:bounds.getNorthEast().lng(), centreLat:map.getCenter().lat(), centreLng:map.getCenter().lng(), order_by_distance:'false' }, function(json){
         for (i=0;i<json.length;i++) {
-		      var map_marker = createMarker(json[i].lat, json[i].lng, json[i].grid, json[i].vill, json[i].vill_slug, json[i].hundred, json[i].county, json[i].raw_value);
-		      map_marker.setMap(map);
+		      var map_marker = addMarker(json[i].lat, json[i].lng, json[i].grid, json[i].vill, json[i].vill_slug, json[i].hundred, json[i].county, json[i].raw_value);
 		      places_html += "<li><a href='/place/" + json[i].grid + "/" + json[i].vill_slug + "'>" + json[i].vill +
 		          "</a>, " + json[i].hundred + ", " + json[i].county + ", " + 
-		          roundNumber(json[i].distance) + " km, " +
-		          json[i].raw_value + "</li>";
+		          roundNumber(json[i].distance) + " km</li>";
         }
+// <li><a href="{% url place place.grid place.vill_slug %}">{{place.vill}}</a>, {% for county in place.county.all %}{{ county }} {% endfor %}</li>
         if (!html_set) {
 	      results_html.innerHTML = places_html + "</ul>";
 	      html_set = true;
@@ -85,33 +89,21 @@ function search_page(results_html) {
     });
 }
 
-function whole_map() {
-	    var latlng = new google.maps.LatLng(52.36187505907603, -1.614990234375);
-	    var myOptions = {
-	      zoom: 7,
-	      scrollwheel: false,
-	      center: latlng,
-	      mapTypeId: google.maps.MapTypeId.ROADMAP
-	    };
-        map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
-        markers = []
-        $.getJSON("/all_markers/", {}, function(json) {
-          for (i=0;i<json.length;i++) {
-		      var map_marker = createMarker(json[i].lat, json[i].lng, json[i].grid, json[i].vill, json[i].vill_slug, json[i].hundred, json[i].county, json[i].raw_value);
-		      markers.push(map_marker);
-          }
-        });
-		//for(var i = 0; i < places_json.places.length ; i++) {
-		//     var latlng = new google.maps.LatLng(places_json.places[i].lat, places_json.places[i].lon);
-	    //	   var title = places_json.places[i].vill;
-		//     var html = "<strong><a href=/place/" + places_json.places[i].grid + "/" + encodeURI(places_json.places[i].vill) + ">" + places_json.places[i].vill + "</a></strong><br/>" + places_json.places[i].county;
-		//     var marker = createMarker(latlng, title, html, colour);
-		//     markers.push(marker);
-		//}
-		var markerCluster = new MarkerClusterer(map, markers, {maxZoom: 10});
+// **************************************
+// Add individual markers to the map.
+// **************************************
+
+//TODO: work out what to do about colours.  
+function addMarker(lat, lng, grid, vill, vill_slug, hundred, county, raw_value, colour) {
+	var map_marker = createMarker(lat, lng, grid, vill, vill_slug, hundred, county, raw_value, colour);
+	//var mm = new GMarkerManager(map, {maxZoom:19});
+	//mm.addMarker(marker,0,17); 
+    //alert('zoom level: ');
+    map_marker.setMap(map);
 }
 
-// Create an individual marker
+// Create an individual marker. Marker size depends on raw value.
+// Marker colour depends on status if supplied, else on hundred.
 function createMarker(lat, lng, grid, vill, vill_slug, hundred, county, raw_value, colour) {
 	    var latlng = new google.maps.LatLng(lat, lng);
 		var html = "<strong><a href=/place/" + grid + "/" + vill_slug + ">" + vill + "</a></strong><br/>" + hundred + ", " + county;
@@ -121,6 +113,7 @@ function createMarker(lat, lng, grid, vill, vill_slug, hundred, county, raw_valu
         var width = 0;
         var height = 0;
 		raw_value = parseFloat(raw_value);
+		//TODO: tidy these up. 
 		if (raw_value > 10.0) {
 			  height = 48;
 			  width = 36;

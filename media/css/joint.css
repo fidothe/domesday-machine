@@ -65,7 +65,9 @@ div.banner a {font-weight:bold;}
 
 #nav-map #nav-map a,
 #nav-people #nav-people a,
+#nav-book #nav-book a,
 #nav-places #nav-places a,
+#nav-stats #nav-stats a,
 #nav-translate #nav-translate a,
 #nav-about #nav-about a,
 #nav-contact #nav-contact a,
@@ -87,7 +89,7 @@ div.banner a {font-weight:bold;}
 /********************************/
 #divContent {padding-bottom:3em; font-size:0.9em;}
 #divPage { width:94%; min-width: 900px; text-align:left; margin:0 auto; position:relative;}
-#divMap { float:right; width:400px; margin-left:20px;}
+#divMap { float:right; width:400px; margin: 0 0 10px 20px;}
 
 /**********************************
 / Page titles
@@ -115,8 +117,19 @@ small.error_hint {color:#cc0000;}
 /**********************************
 / Footer
 /********************************/
-#divFooter {clear:both;text-align:left; position:relative;border-top:solid 1px #9f9f9f; padding-bottom: 0.5em;
-        bottom:0; left:0;min-height:105px; clear:left; width:100%; font-size:0.9em; background:#e7f5ff url(../images/footer_background.png) repeat-x top left}
+#divFooter {
+ clear:both;
+ text-align:left;
+ position:relative;
+ border-top:solid 1px #9f9f9f; 
+ padding-bottom: 0.5em; 
+ bottom:0; 
+ left:0;
+ min-height:105px; 
+ width:100%; 
+ font-size:0.9em; 
+ background:#e7f5ff url(../images/footer_background.png) repeat-x top left;
+}
 #divFooter a {color:#000;}        
 #divFooter dl {padding: 1em 150px 0.5em 3%;}
 #divFooter dl dt {float:left; width:9em; color:#616161;clear:left;font-weight:bold; 
@@ -279,4 +292,82 @@ ul.atoz li a:hover {color:#fff;border:1px solid #ff5b00;background:#ff5b00;text-
 	border-radius: 1.1em;
 	text-decoration: none;
 	color: black;
+}
+
+.section_title {
+    font-weight: bold;
+}
+.tooltip {
+    border-bottom: 1px dotted #808080;
+}
+/*.tooltip:hover {
+    border-bottom: 1px dashed #808080;
+}*/
+.tooltip_text{
+    font-size: 80%;  
+    text-align:left;  
+}
+
+
+/* slider styles */
+
+#slider {
+    clear: both;
+    width: 840px;
+    position: relative;
+    margin-left: 50px;
+    margin-right: 50px;
+}
+
+#slider1 {
+    height: 180px;
+    width: 840px;
+  /*  overflow:hidden; */
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 12px;
+}
+.multiple {
+    align: center;
+    float: center;
+
+} 
+ul#slider1 li {
+    width: 100px;
+}
+
+ul#slider2 li {
+    width: 800px;
+}
+
+.multiple li img {
+    overflow:hidden;
+    margin-left: auto;
+    margin-right: auto;
+}
+a.bx-prev, a.bx-next {
+    top: 30%;
+}
+
+.image-caption {
+   font-size:80%;
+}
+
+.multiple {
+    align: center;
+    float: center;
+
+} 
+.multiple li {
+    width: 105px;
+}
+
+.multiple li img {
+    overflow:hidden;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+img.highlight {
+    border: solid 1px grey;
 }

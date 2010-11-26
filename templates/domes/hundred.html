@@ -11,11 +11,15 @@
 
 <div class="content">
 
-<div id="map_canvas" style="width: 50%; height: 400px; float: right;"></div>
+
+<div id="divMap">
+<div id="map_canvas" style="width:400px; height:400px;"></div>
+</div>
+</div>
 
 {% if hundred.status %}
 <ul>
-	<li><strong>Status:</strong> {{ hundred.status }}</li>
+<li><span id="identification" class="section_title tooltip">Lost</span>: {{ hundred.status }}</li>
 </ul>
 {% endif %}
 
@@ -23,26 +27,24 @@
 
 <ul>
 {% for place in hundred.place_set.all %}
-<li><a href="{% url place place.grid place.vill_slug %}">{{place.vill}}</a>, {{ place.county.name }}</li>
+<li><a href="{% url place place.grid place.vill_slug %}">{{place.vill}}</a>, {% for county in place.county.all %}{{ county }} {% endfor %}</li>
 {% endfor %}
 </ul>
 
 </div>
 
 <script type="text/javascript">
-
-var places = [];
-
-{% for place in places_with_grid %}
-var temp_array = ['{{place.lat}}', '{{place.lon}}', '{{place.vill}}', '{{place.grid}}', '{{place.county}}'];
-places.push(temp_array);
-{% endfor %}
-{% for place in places_with_grid %}
-{% if forloop.first %}
-window.onload = load_page('{{place.lat}}', '{{place.lon}}', 9, places);
+{% if centre %}
+    var lat = {{centre.y}};
+    var lng = {{centre.x}};
+{% else %}
+    var lat = null;
+	var lng = null;
 {% endif %}
+window.onload = set_up_map(lat, lng);
+{% for place in hundred.place_set.all %}
+addMarker('{{place.location.y}}', '{{place.location.x}}', '{{place.grid}}', '{{place.vill}}', '{{place.vill_slug}}', '{{place.hundred}}', '{% for county in place.county.all %}{{ county }} {% endfor %}', '{{place.holding}}', '{{place.units}}', '0066FF' );
 {% endfor %}
-
 </script>
 
 {% endblock %}

@@ -11,22 +11,28 @@ class County(models.Model):
     def __unicode__(self):
         return self.name
 
+class Area(models.Model):
+    name = models.CharField(max_length=100, primary_key=True)
+    name_slug = models.SlugField()
+    def __unicode__(self):
+        return self.name
+		
 class Hundred(models.Model):
     name = models.CharField(max_length=100, primary_key=True)
     name_slug = models.SlugField()
     status = models.CharField(max_length=100, null=True, blank=True)
     def __unicode__(self):
         return self.name
-    
+		    
 # Place. From PlacesForAHRC.txt
 class Place(models.Model):
     id = models.IntegerField(primary_key=True) 
-    county = models.ForeignKey(County)
-    phillimore = models.CharField(max_length=300, null=True, blank=True)
+    county = models.ManyToManyField(County,related_name='county')
+    area = models.ManyToManyField(Area,related_name='area')
     hundred = models.ForeignKey(Hundred, null=True)
+    phillimore = models.CharField(max_length=300, null=True, blank=True)
     vill = models.CharField(max_length=300)
     vill_slug = models.SlugField()
-    area = models.CharField(max_length=300, null=True, blank=True)
     xrefs = models.CharField(max_length=300, null=True, blank=True)
     grid = models.CharField(max_length=120, null=True, blank=True) # OS grid ref
     os_codes = models.CharField(max_length=120, null=True, blank=True) # 'uncertain', etc
@@ -176,15 +182,20 @@ class Manor(models.Model):
             return True
         return False
     def has_livestock_1066(self):
-        if (self.cobs_1066 or self.cattle_1066 or self.cows_1066 or self.pigs_1066 \
-            or self.sheep_1066 or self.goats_1066 or self.beehives_1066 \
-            or self.wild_mares_1066 or self.other_1066 or self.other_codes_1066):
+        if (self.cobs_1066 is not None or self.cattle_1066 is not None or \
+            self.cows_1066 is not None or self.pigs_1066 is not None\
+            or self.sheep_1066 is not None or self.goats_1066 is not None \
+            or self.beehives_1066 is not None \
+            or self.wild_mares_1066 is not None or self.other_1066 is not None):
             return True
         return False
-    def has_livestock_1066(self):
-        if (self.cobs_1086 or self.cattle_1086 or self.cows_1086 or self.pigs_1086 \
-            or self.sheep_1086 or self.goats_1086 or self.beehives_1086 \
-            or self.wild_mares_1086 or self.other_1086 or self.other_code_1086):
+    def has_livestock_1086(self):
+        if (self.cobs_1086 is not None or self.cattle_1086 is not None \
+            or self.cows_1086 is not None or self.pigs_1086 is not None \
+            or self.sheep_1086 is not None or self.goats_1086 is not None \
+            or self.beehives_1086 is not None \
+            or self.wild_mares_1086 is not None or self.other_1086 is not None\
+            or self.other_code_1086 is not None):
             return True
         return False  
 

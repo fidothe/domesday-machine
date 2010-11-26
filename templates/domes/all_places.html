@@ -47,8 +47,8 @@
 
 <ul>
 {% for place in places %}
-<li><a href="{% url place place.grid place.vill_slug %}">{{ place.vill }}</a>, 
-<a href="{% url county place.county.name %}">{{ place.county.name }}</a></li>
+<li><a href="{% url place place.grid place.vill_slug %}">{{ place.vill }}</a>,
+{% for county in place.county.all %}{{ county }} {% endfor %}</li>
 {% endfor %}
 </ul>
 

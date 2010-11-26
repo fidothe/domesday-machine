@@ -1,90 +1,25 @@
 {% extends "domes/base.html" %}
-
+{% block nav-class %}nav-stats{% endblock %}
 {% block title %}Statistics{% endblock %}
+
+
 {% block content %}
 
 <div class="page_title">
 <h2>Statistics</h2>
 
-<p>Statistics for each county in the Domesday Book. Click on headers to sort; hover over headers for an explanation of each column.</p>
 
 </div>
 
 <div class="content">
 
-<script type="text/javascript" src="{{ MEDIA_URL }}js/jquery.js" ></script> 
-<script type="text/javascript" src="{{ MEDIA_URL }}js/tablesorter.js" ></script>
+<img style="float:left; margin-right:20px" src="/media/images/sheep.jpg" title="Sheep!" height="80px"/>
 
-<script type="text/javascript">
-$(function() 
-    { 
-        $("#statsTable").tablesorter(); 
-    } 
-);
-</script>
+<p>Coming soon - league tables for the biggest places, the most powerful female landowners,
+ and the <strong>places with the most sheep</strong>.</p>
 
-<table id="statsTable" class="raw_data">
-<thead> 
-<tr>
-<th>County</th>
-<th>Circuit</th>
-<th>Geld</th>
-<th>Land</th>
-<!-- <th>Lord's ploughs</th>
-<th>Men's ploughs</th>
-<th>Total ploughs</th>
-<th>Villagers</th>
-<th>Smallholders</th>
-<th>Slaves</th>
-<th>Ancill</th>
-<th>Freemen</th>
-<th>Free_men</th>
-<th>Priests</th>
-<th>Cotts</th>
-<th>Burgesses</th>
-<th>Other</th>
-<th>Misc</th>
-<th>Mills</th>
-<th>Mvalue</th> -->
-<th>Value in 1066</th>
-<th>ValQR</th>
-<th>Value in 1086</th> <!--
-<th>Churches</th>
-<th>Chland</th>-->
-</tr>
-</thead> 
-<tbody>
-{% for county in counties %}
-<tr>
-<td>{{county.name }}</td>
-<td>{{county.circuit}} </td>
-<td>{{county.geld}} </td>
-<td>{{county.land }} </td>
-<!-- <td>{{county.lordsploughs}} </td>
-<td>{{county.mensploughs }} </td>
-<td>{{county.totalploughs}} </td>
-<td>{{county.villagers }} </td>
-<td>{{county.smallholders }} </td>
-<td>{{county.slaves }} </td>
-<td>{{county.ancill}}  </td>
-<td>{{county.freemen}} </td>
-<td>{{county.free_men}} </td>
-<td>{{county.priests}} </td>
-<td>{{county.cotts}} </td> 
-<td>{{county.burgesses}}  </td>
-<td>{{county.other}}  </td>
-<td>{{county.misc}}  </td>
-<td>{{county.mills}} </td>
-<td>{{county.mvalue}}</td>    -->
-<td>{{county.val66}} </td>
-<td>{{county.valqr}} </td>
-<td>{{county.val86}}  </td> <!--
-<td>{{county.churches}} </td>  
-<td>{{county.chland}} </td> -->
-</tr> 
-{% endfor %}
-</tbody> 
-</table>
+<p>If there's a Domesday Book league table you'd like to see here, please <a href="/contact">get in touch</a>.
+</p>
 
 </div>
 <div style="clear: both;"></div>

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.gis.geos import Point, Polygon
 from django.contrib.gis.geos import fromstr
 from django.contrib.gis.measure import D
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Q
 from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import Template, RequestContext, loader, Context
@@ -20,40 +20,24 @@ import util
 def homepage(request):
     return render_to_response('domes/homepage.html', {}, context_instance = RequestContext(request))
 
-def all_markers(request):
-    query = "SELECT * FROM domes_place WHERE grid!='none' AND vill!='-' AND lat!='0.0' GROUP BY grid, vill"
-    params = ()
-    places = Place.objects.raw(query, params)
+def all_places_json(request):
+    places = Place.objects.all()
     markers = []
     for place in places:
         place_dict = {}
-        place_dict['placeidx'] = str(place.placeidx)
-        place_dict['lat'] = str(place.lat)
-        place_dict['lng'] = str(place.lon)
-        place_dict['vill'] = place.vill
+        place_dict['lat'] = place.location.y
+        place_dict['lng'] = place.location.x
         place_dict['grid'] = place.grid
-        place_dict['hundred'] = place.hundred
-        place_dict['county'] = place.county
-        place_dict['waste86'] = place.waste86
-        place_dict['holding'] = place.holding
-        place_dict['units'] = place.units
+        place_dict['vill'] = place.vill
+        place_dict['vill_slug'] = place.vill_slug
+        if place.hundred:
+            place_dict['hundred'] = place.hundred.name
+            place_dict['hundred_slug'] = place.hundred.name_slug
+        county = place.county.all()[0].name
+        place_dict['county'] = county
+        place_dict['value'] = place.value
+        place_dict['raw_value'] = place.raw_value
         markers.append(place_dict)
-    json = simplejson.dumps(markers)
-    return HttpResponse(json, mimetype='application/json')
-
-def all_places_json(request):
-    term = request.GET.get('term', None)
-    if term:
-        query = "SELECT * FROM domes_place WHERE grid!='none' AND vill!='-' AND vill LIKE '%%" + term + "%%' GROUP BY vill"
-        query.replace('%%', '%')
-        print query
-    else:
-        query = "SELECT * FROM domes_place WHERE grid!='none' AND vill!='-' AND vill LIKE 'moddershall' GROUP BY vill"
-    params = ()
-    places = Place.objects.raw(query, params)
-    markers = []
-    for place in places:
-        markers.append(place.vill)
     json = simplejson.dumps(markers)
     return HttpResponse(json, mimetype='application/json')
 
@@ -64,13 +48,10 @@ def markers_within_bounds(request):
     neLng = request.GET.get('neLng')
     centreLat = str(request.GET.get('centreLat'))
     centreLng = str(request.GET.get('centreLng'))
-    print centreLat, centreLng
     centre = fromstr('POINT(%s %s)' % (centreLng, centreLat))
     boundaries = fromstr('POLYGON((%s %s,%s %s,%s %s,%s %s,%s %s))' % \
            (swLng, swLat, swLng, neLat, neLng, neLat, neLng, swLat, swLng, swLat))
     places = Place.objects.filter(location__within=boundaries).distance(centre).order_by('distance')
-    for place in places:
-        print place.vill
     markers = []
     for place in places:
         place_dict = {}
@@ -124,7 +105,8 @@ def place(request, grid, vill_slug):
     counties = place.county.all()
     manors = Manor.objects.filter(place__id=place.id)
     return render_to_response('domes/place.html', { 'place': place, \
-             'areas': areas, 'counties': counties, 'manors': manors }, \
+              'areas': areas, 'counties': counties, 'manors': manors, \
+              'has_image': True }, \
               context_instance = RequestContext(request))
 
 def county(request, county_slug):
@@ -148,8 +130,9 @@ def hundred(request, hundred_name_slug):
 def person(request, namesidx, name_slug):
     person = Person.objects.get(namesidx=namesidx)
     lord66_manors = Manor.objects.filter(lord66=person)
-    return render_to_response('domes/person.html', { 'person' : person }, \
-       context_instance = RequestContext(request))
+    centre = None
+    return render_to_response('domes/person.html', { 'person' : person, \
+       'centre': centre }, context_instance = RequestContext(request))
 
 ################################ 
 # Search
@@ -169,24 +152,31 @@ def search(request):
 ################################
 def stats(request):
     counties = County.objects.exclude(short_code="LAN").order_by('Person')
-    return render_to_response('domes/stats.html', { 'counties' : counties, }, context_instance = RequestContext(request))
+    return render_to_response('domes/stats.html', { 'counties' : counties, }, 
+           context_instance = RequestContext(request))
 
 ################################
 # Place listings - counties & places
 ################################
 def all_counties(request):
-    counties = County.objects.exclude(short_code="LAN") # exclude Lancashire because it has no places
-    return render_to_response('domes/all_counties.html', { 'counties' : counties, }, context_instance = RequestContext(request))
+    counties = County.objects.exclude(short_code="LAN") 
+    # Exclude Lancashire - it didn't exist :( and so has no places.
+    return render_to_response('domes/all_counties.html', { 'counties' : counties, }, 
+                 context_instance = RequestContext(request))
 
 def all_places(request):
     index_char = request.GET.get('indexChar', 'a')
     places = Place.objects.filter(vill__istartswith=index_char).order_by('vill')
-    return render_to_response('domes/all_places.html', { 'places' : places }, context_instance = RequestContext(request))
+    return render_to_response('domes/all_places.html', { 'places' : places }, 
+                 context_instance = RequestContext(request))
 
 def all_people(request):
     index_char = request.GET.get('indexChar', 'a')
     people = Person.objects.filter(name__istartswith=index_char).order_by('name')
-    return render_to_response('domes/all_people.html', { 'people' : people, }, context_instance = RequestContext(request))
+           #Q(lord66__isnull=False) | Q(overlord66__isnull=False) \
+            #   | Q(lord86__isnull=False) | Q(teninchief__isnull=False)
+    return render_to_response('domes/all_people.html', { 'people' : people, }, 
+               context_instance = RequestContext(request))
 
 ################################
 # Generic pages

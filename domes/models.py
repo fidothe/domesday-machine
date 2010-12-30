@@ -41,6 +41,8 @@ class Place(models.Model):
     status = models.CharField(max_length=100, null=True, blank=True)
     def __unicode__(self):
         return self.vill
+	class Meta:
+	    ordering = ('county', 'hundred', 'vill')
     @property
     def value(self):
         manors = Manor.objects.filter(place__id=self.id)
@@ -198,14 +200,6 @@ class Manor(models.Model):
             or self.other_code_1086 is not None):
             return True
         return False  
-
-# Place references - links Manors and Places. From ByPlaceForAHRC.txt
-# class PlaceRef(models.Model):
-#     manor = models.ForeignKey(Manor)
-#     place = models.ForeignKey(Place)
-#     holding = models.FloatField(null=True, blank=True)
-#     units = models.CharField(max_length=100, null=True, blank=True)
-
 
 ################################################
 # Image-related tables

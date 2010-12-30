@@ -1,6 +1,9 @@
 var map; 
 var place_name = "";
 var infowindow = new google.maps.InfoWindow(); 
+var colours = ['FF0000', 'FFCCCC', '009966', 'FFFF66', '5B59BA'];
+var h_colours = []; // associative array for hundreds <-> colours
+var counter = 0;
 
 // Set up a basic map. Optionally supply a centre:
 // otherwise default to centre of Britain.
@@ -19,7 +22,7 @@ function set_up_map(centre_lat,centre_lng) {
       scrollwheel: false,
       center: latlng,
       mapTypeId: google.maps.MapTypeId.ROADMAP,
-      maxZoom: zoom_level+1,
+      maxZoom: zoom_level+2,
       minZoom: zoom_level-1
     };
     map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
@@ -28,31 +31,27 @@ function set_up_map(centre_lat,centre_lng) {
 
 // We want to show a particular place. Add a marker for that place,
 // and fill in other markers inside the map's bounds.
-function show_place (lat, lng, place_name, grid, county, zoom_level) {
+function show_place (lat, lng, place_name, slug, grid, hundred, county, raw_value, zoom_level) {
 	var latlng = new google.maps.LatLng(lat, lng);
     var myOptions = {
       zoom: zoom_level,
 	  scrollwheel: false,
       center: latlng,
       mapTypeId: google.maps.MapTypeId.ROADMAP,
-      maxZoom: zoom_level+1,
+      maxZoom: zoom_level+2,
       minZoom: zoom_level-1
     };
     map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
-	var marker = new google.maps.Marker({
-	      position: latlng,
-	      map: map,
-	      title: place_name,
-	      zIndex: 5
-	  });
+	var marker = addMarker(lat, lng, grid, place_name, slug, hundred, county, raw_value, "FF6666");
 	// When the map boundaries move, add new markers within the bounds.
 	google.maps.event.addListener(map, 'tilesloaded', function() {
       var bounds = map.getBounds();
       $.getJSON("/markers_within_bounds/", { swLat:bounds.getSouthWest().lat(), swLng:bounds.getSouthWest().lng(),neLat:bounds.getNorthEast().lat(), neLng:bounds.getNorthEast().lng(), centreLat:map.getCenter().lat(), centreLng:map.getCenter().lng() }, function(json){
         for (i=0;i<json.length;i++) {
 	      if ((json[i].grid != grid) && (json[i].vill != place_name)) {
-		      var map_marker = addMarker(json[i].lat, json[i].lng, json[i].grid, json[i].vill, json[i].vill_slug, json[i].hundred, json[i].county, json[i].raw_value);
-		      //map_marker.setMap(map);
+		      var map_marker = addMarker(json[i].lat, json[i].lng, json[i].grid, 
+			                   json[i].vill, json[i].vill_slug, json[i].hundred, 
+		                       json[i].county, json[i].raw_value);
 	      }
         }
        });
@@ -80,7 +79,6 @@ function search_page(results_html) {
 		          "</a>, " + json[i].hundred + ", " + json[i].county + ", " + 
 		          roundNumber(json[i].distance) + " km</li>";
         }
-// <li><a href="{% url place place.grid place.vill_slug %}">{{place.vill}}</a>, {% for county in place.county.all %}{{ county }} {% endfor %}</li>
         if (!html_set) {
 	      results_html.innerHTML = places_html + "</ul>";
 	      html_set = true;
@@ -93,12 +91,24 @@ function search_page(results_html) {
 // Add individual markers to the map.
 // **************************************
 
-//TODO: work out what to do about colours.  
+//TODO: Enable per-hundred colouring for "whole map" page?
 function addMarker(lat, lng, grid, vill, vill_slug, hundred, county, raw_value, colour) {
+	//alert(colour);
+	if (colour==undefined) {
+		colour = "6699FF";
+		var use_hundreds = false;
+		if (use_hundreds) {
+			if (h_colours[hundred]==undefined) {
+	             h_colours[hundred] = colours[counter];
+	             colour = colours[counter];
+	             counter += 1;
+	             if (counter>=colours.length) {
+	                 counter=0;
+	             }	 
+	        }
+	   }
+    }
 	var map_marker = createMarker(lat, lng, grid, vill, vill_slug, hundred, county, raw_value, colour);
-	//var mm = new GMarkerManager(map, {maxZoom:19});
-	//mm.addMarker(marker,0,17); 
-    //alert('zoom level: ');
     map_marker.setMap(map);
 }
 
@@ -106,35 +116,46 @@ function addMarker(lat, lng, grid, vill, vill_slug, hundred, county, raw_value, 
 // Marker colour depends on status if supplied, else on hundred.
 function createMarker(lat, lng, grid, vill, vill_slug, hundred, county, raw_value, colour) {
 	    var latlng = new google.maps.LatLng(lat, lng);
-		var html = "<strong><a href=/place/" + grid + "/" + vill_slug + ">" + vill + "</a></strong><br/>" + hundred + ", " + county;
-	    if (colour == 'Y') {
-		      colour = "BEBEBE";
-	    }
+        if (colour==undefined) {
+	        colour="3366CC";
+        }
+		var html = "<strong><a href=/place/" + grid + "/" + vill_slug + ">" + vill + "</a></strong><br/>";
+		if (hundred!=undefined) {
+		    html += hundred + ", ";			
+		} 
+		html += county;
         var width = 0;
         var height = 0;
 		raw_value = parseFloat(raw_value);
 		//TODO: tidy these up. 
-		if (raw_value > 10.0) {
-			  height = 48;
-			  width = 36;
-		} else if (raw_value > 5.0) {
-			  height = 40;
-			  width = 30;
-		} else if (raw_value > 3.0) {
+        if (raw_value > 10.0) {
 			  height = 32;
 			  width = 24;
-		} else if (raw_value > 1.0) {
+		} else if (raw_value > 5.0) {
+			  height = 28;
+			  width = 21;
+		} else if (raw_value > 3.0) {
 			  height = 24;
 			  width = 18;
+		} else if (raw_value > 1.0) {
+			  height = 20;
+			  width = 15;
 	   } else {
 			  height = 16;
 			  width = 12;
 		}
-        var size = new google.maps.Size(width,height);
-	    var image_url = "http://chart.apis.google.com/chart?cht=mm&chs=" + width + "x" + height + "&chco=FFFFFF," + colour + ",000000&ext=.png";
-		var image = new google.maps.MarkerImage(image_url, size, new google.maps.Point(0,0), new google.maps.Point(12, 32));
-	    var shadow = new google.maps.MarkerImage('http://chart.apis.google.com/chart?chst=d_map_pin_shadow', new google.maps.Size(40, 37),new google.maps.Point(0,0), new google.maps.Point(12,35));
-
+	    var image_url = "http://chart.apis.google.com/chart?cht=mm&chs=" + width + "x" + 
+	                         height + "&chco=FFFFFF," + colour + ",000000&ext=.png";
+		var image = new google.maps.MarkerImage(image_url, new google.maps.Size(width,height), 
+		               new google.maps.Point(0,0), new google.maps.Point(width/2,height));
+		// The 'raw' dimensions of the shadow are 40 wide, 37 high, with the origin at 11 wide, 37 high. 
+		//var shadowDimensions = new google.maps.Size(20, 20);
+		//var shadowOrigin = new google.maps.Point(5, 20)
+        var shadowOrigin = new google.maps.Point(Math.ceil(height*0.3), Math.ceil(height*0.9));
+        var shadowDimensions = new google.maps.Size(height, Math.ceil(height*0.9));
+	    var shadow = new google.maps.MarkerImage('http://chart.apis.google.com/chart?chst=d_map_pin_shadow', 
+	                 new google.maps.Size(40,37), new google.maps.Point(0,0), shadowOrigin, 
+	                 shadowDimensions);
 		var marker = new google.maps.Marker({
 	      position: latlng, 
 	      title: vill,

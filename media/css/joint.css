@@ -371,3 +371,8 @@ a.bx-prev, a.bx-next {
 img.highlight {
     border: solid 1px grey;
 }
+
+.small-caps-header { 
+ font-variant: small-caps; 
+ font-weight: bold;
+}

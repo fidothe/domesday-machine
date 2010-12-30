@@ -1,3 +1,4 @@
+# -*- coding: mac-roman -*-
 ##############################################################
 # Script to convert Domesday tab-separated files to SQL
 # BEWARE! - will OVERWRITE your existing database
@@ -68,6 +69,7 @@ def get_places():
     place_mapper dict, and use this to map from Manors to Places.
     '''
     print "get_places()"
+    global place_mapper
     # open tab file
     fn = os.path.join(os.path.dirname(__file__), 'new_data/PlacesForAHRC.txt')
     f = open(fn, 'r')
@@ -153,9 +155,9 @@ def get_places():
                sql_string = "INSERT INTO domes_place_area (place_id,area_id) VALUES ("      
                sql_string += id + ", " + area + ");"
     conn.commit()
-	
+    
 def get_placerefs():
-	'''Map place IDs to manor IDs. Replaces duplicate place IDs using place mapper.'''
+    '''Map place IDs to manor IDs. Replaces duplicate place IDs using place mapper.'''
     print "get_placerefs()"
     # open tab file
     fn = os.path.join(os.path.dirname(__file__), 'new_data/ByPlace For AHRC.txt')
@@ -175,9 +177,9 @@ def get_placerefs():
            if place_id in place_mapper.keys():
                place_id = place_mapper[place_id]
            sql_string = "INSERT INTO domes_manor_place (manor_id, place_id) SELECT "
-           sql_string += manor_id + ", " + place_id + " WHERE "
-           sql_string += manor_id + " NOT IN (SELECT manor_id FROM domes_manor_place) AND "
-           sql_string += place_id + " NOT IN (SELECT place_id FROM domes_manor_place);"
+           sql_string += manor_id + ", " + place_id + " WHERE ("
+           sql_string += manor_id + ", " + place_id + ") NOT IN "
+           sql_string += "(SELECT manor_id, place_id FROM domes_manor_place);"
            cursor.execute(sql_string)
     conn.commit()
 
@@ -608,18 +610,18 @@ def get_images():
 # # Get places 
 get_counties()
 get_places() 
-get_manors() 
-get_livestock() 
+# get_manors() 
+# get_livestock() 
 get_placerefs() 
  
 # Get images
-get_images() 
+#get_images() 
 
 # Get people
-get_people() 
-#get_peoplenotes() # incomplete
-get_treowners() 
-get_trwowners()
+# get_people() 
+# #get_peoplenotes() # incomplete
+# get_treowners() 
+# get_trwowners()
 
 conn.commit()
 cursor.close()

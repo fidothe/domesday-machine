@@ -40,7 +40,7 @@ urlpatterns = patterns('',
     # API
     url(r'^api/$', 'domes.views.api', name="api"),
     url(r'^markers_within_bounds/$', 'domes.views.markers_within_bounds', name="markers_within_bounds"), 
-    url(r'^all_markers/$', 'domes.views.all_markers', name="all_markers"),   
+    url(r'^all_markers/$', 'domes.views.all_places_json', name="all_markers"),   
     # Contact form
     (r'^contact/', include('contact_form.urls')),
     # Json files (used for autocomplete)

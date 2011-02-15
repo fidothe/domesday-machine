@@ -11,7 +11,7 @@
 
 <ul style="list-style-type: none;">
 {% for county in counties %}
-<li><a href="{% url county county.name %}">{{ county.name }}</a> ({{ county.places.count}} places)</li>
+<li><a href="{{ county.get_absolute_url }}">{{ county.name }}</a> ({{ county.places.count}} places)</li>
 {% endfor %}
 </ul>
 

@@ -1,11 +1,11 @@
 {% extends "domes/base.html" %}
 
-{% block title %}{{ county_name.upper }}{% endblock %}
-{% block description %}The county of {{ county_name.upper }} in the Domesday Book{% endblock %}
+{% block title %}{{ county }}{% endblock %}
+{% block description %}The county of {{ county }} in Domesday Book{% endblock %}
 {% block nav-class %}nav-places{% endblock %}
 {% block content %}
 <div class="page_title">
-<h1>County: {{ county_name}}</h1>
+<h1>County: {{ county}}</h1>
 </div>
 
 <div class="content">
@@ -19,24 +19,33 @@ $(function()
         $("#statsTable").tablesorter({ 
 		        headers: { 0: { sorter:'text' } , 
 		                   1: { sorter:'text' } ,
-		                   2: { sorter:'digit' } 
+		                   2: { sorter:'digit' } ,
+		                   3: { sorter:'digit' } ,		
 		                 } , 
-		         sortList: [[2,1]] 
+		         sortList: [[3,2]] 
 		    });
     } 
 );value
 </script>
 
-<p>Places in the county of <strong>{{ county_name.upper }}</strong> in the Domesday Book.</p>
+<div id="divMap">
+<div id="map_canvas" style="width:400px; height:400px;"></div>
+</div>
+</div>
 
-<!-- <div id="map_canvas" style="width: 100%; height: 600px"></div> -->
+<p>There were {{ places.count }} places in the county of <strong>{{ county }}</strong> in Domesday Book.</p>
 
-<table id="statsTable" class="tablesorter" style="width: 100%;">
-<thead><tr><th>Name</th><th>Hundred</th><th>Tax paid</th></tr></thead>
+<table id="statsTable" class="tablesorter" >
+<thead><tr>
+<th>Name</th><th>Hundred</th><th>Tax paid</th><th>Population</th>
+</tr></thead>
 <tbody>
 {% for place in places %}
 <tr>
-<td><a href="/place/{{place.grid}}/{{ place.vill }}">{{ place.vill }}</a></td><td><a href="{% url hundred place.hundred %}">{{ place.hundred }}</a></td><td>{{ place.holding }} {{ place.units }}</td>
+<td><a href="{{ place.get_absolute_url }}">{{ place.vill }}</a></td>
+<td><a href="{{ place.hundred.get_absolute_url }}"> {{ place.hundred }}</a></td>
+<td>{{ place.raw_value|floatformat:"-1" }}</td>
+<td>{{ place.population|floatformat:"-1" }}</td>
 </tr>
 {% endfor %}
 </tbody>
@@ -47,6 +56,20 @@ $(function()
 </div>
 
 <div style="clear: both;"></div>
+
+<script type="text/javascript">
+{% if centre %}
+    var lat = {{centre.y}};
+    var lng = {{centre.x}};
+{% else %}
+    var lat = null;
+	var lng = null;
+{% endif %}
+window.onload = set_up_map(lat, lng);
+{% for place in places %}
+addMarker('{{place.location.y}}', '{{place.location.x}}', '{{place.grid}}', '{{place.vill}}', '{{place.vill_slug}}', '{{place.hundred}}', '{% for county in place.county.all %}{{ county }} {% endfor %}', '{{place.population|floatformat:"-1"}}' );
+{% endfor %}
+</script>
 
 
 {% endblock %}

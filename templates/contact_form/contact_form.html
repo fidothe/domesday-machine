@@ -12,8 +12,10 @@ Let me know your details if so. You can also contact me, Anna, directly on 07812
     <div class="content">
 	    <h3>Get in touch</h3>
 	<form method="post" action="" id="contact_form">
+	<table>
 	{% csrf_token %}
-    {{ form.as_p }}
+    {{ form }}
+</table>
 <input type="submit" value="Send email">
 </form>
     </div>

@@ -1,12 +1,17 @@
-{% extends "frontend/base.html" %}
+{% extends "domes/base.html" %}
+{% block nav-class %}nav-book{% endblock %}
+{% block title %}404 Not Found{% endblock %}
+{% block description %}Not found{% endblock %}
 
-{% block title %}About{% endblock %}
 {% block content %}
-    <div class="attention">
-        <h1>Page not found</h1>
-        <p>We looked, but we could not find</p>
-    </div>
-    <div class="http_error" class="content">
-        <img src="{{ MEDIA_URL }}/images/404.png"/>
-    </div>
+<div class="page_title">
+<h1>404 NOT FOUND</h1>
+</div>
+
+<div class="content">
+
+<p>Sorry, we couldn't find that page!</p>
+</div>
+
 {% endblock %}
+

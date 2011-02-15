@@ -23,6 +23,25 @@
 </span>
 -->
 
+<div id="leaderboard">
+<h4>Leaderboard</h4>
+<ol>
+{% for user in top_users %}
+<li><a href="{% url profiles_profile_detail user %}">{{ user }}</a>
+({{ user.englishtranslation_set.count }} translation{{ user.englishtranslation_set.count|pluralize }})
+</li>
+{% endfor %}
+</ol>
+</div>
+
+
+<h3>Entries transcribed - {{ translate }}% complete</h3>
+
+<img class="dial" width="200" height="100" 
+src="http://chart.apis.google.com/chart?chs=200x100&amp;cht=gom&amp;chd=t:{{translated}}&amp;chco=ffffff,62B957&amp;chls=3|20&amp;chxt=x,y&amp;chxl=0:|" 
+title="{{ translated}}% complete">
+
+
 <p>The Domesday Book is the most important collection of data...</p>
 
 <p>But a full Latin or English text of Domesday Book is not available online.</p>

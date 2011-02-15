@@ -42,7 +42,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    "pagination.middleware.PaginationMiddleware",
 )
 
 ROOT_URLCONF = 'domesday.urls'
@@ -75,9 +74,14 @@ INSTALLED_APPS = (
     'domesday.domes',
     'contact_form',
     'django.contrib.comments',
-    'pagination',
     'django.contrib.gis',
+    'registration',
+    'profiles',
 )
+
+# Django-registration settings
+ACCOUNT_ACTIVATION_DAYS = 10
+DEFAULT_FROM_EMAIL = 'anna@domesdaymap.co.uk'
 
 # Defaults to MEDIA_URL + 'snapboard/'
 SNAP_MEDIA_PREFIX = '/media'
@@ -86,3 +90,20 @@ USE_SNAPBOARD_LOGIN_FORM = True
 # Select your filter, the default is Markdown
 # Possible values: 'bbcode', 'markdown', 'textile'
 SNAP_POST_FILTER = 'bbcode'
+
+# Percentile values for population and tax
+
+POP_QUIN5 = 34.0
+POP_QUIN4 = 20.0
+POP_QUIN3 = 11.0
+POP_QUIN2 = 5.466666667
+TAX_QUIN5 = 7.618
+TAX_QUIN4 = 4.106
+TAX_QUIN3 = 2.5
+TAX_QUIN2 = 1.0
+
+AUTH_PROFILE_MODULE = 'domes.UserProfile'
+LOGIN_REDIRECT_URL = '/profiles/'
+
+# Width for croppable photos
+CROP_SCALE_FACTOR = 4

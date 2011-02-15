@@ -1,7 +1,7 @@
 {% extends "domes/base.html" %}
 
 {% block title %}Hundred of {{ hundred.name }}{% endblock %}
-{% block description %}The hundred of {{ hundred.name }} in the Domesday Book{% endblock %}
+{% block description %}The hundred of {{ hundred.name }} in Domesday Book{% endblock %}
 {% block nav-class %}nav-places{% endblock %}
 {% block content %}
 
@@ -11,6 +11,22 @@
 
 <div class="content">
 
+<script type="text/javascript" src="{{ MEDIA_URL }}js/jquery.js" ></script> 
+<script type="text/javascript" src="{{ MEDIA_URL }}js/tablesorter.js" ></script>
+
+<script type="text/javascript">
+$(function() 
+    { 
+        $("#statsTable").tablesorter({ 
+		        headers: { 0: { sorter:'text' } , 
+		                   1: { sorter:'digit' } ,
+		                   2: { sorter:'digit' } 
+		                 } , 
+		         sortList: [[2,1]] 
+		    });
+    } 
+)
+</script>
 
 <div id="divMap">
 <div id="map_canvas" style="width:400px; height:400px;"></div>
@@ -23,13 +39,22 @@
 </ul>
 {% endif %}
 
-<p>Places in the hundred of <strong>{{ hundred.name }}</strong> in the Domesday Book.</p>
+<p>There were {{ places.count }} places in the hundred of <strong>{{ hundred.name }}</strong> in Domesday Book.</p>
 
-<ul>
-{% for place in hundred.place_set.all %}
-<li><a href="{% url place place.grid place.vill_slug %}">{{place.vill}}</a>, {% for county in place.county.all %}{{ county }} {% endfor %}</li>
+<table id="statsTable" class="tablesorter" >
+<thead><tr>
+<th>Name</th><th>Tax paid</th><th>Population</th>
+</tr></thead>
+<tbody>
+{% for place in places %}
+<tr>
+<td><a href="{{ place.get_absolute_url }}">{{ place.vill }}</a></td>
+<td>{{ place.raw_value|floatformat:"-1" }}</td>
+<td>{{ place.population|floatformat:"-1" }}</td>
+</tr>
 {% endfor %}
-</ul>
+</tbody>
+</table>
 
 </div>
 
@@ -42,9 +67,15 @@
 	var lng = null;
 {% endif %}
 window.onload = set_up_map(lat, lng);
+//var bounds = new google.maps.LatLngBounds();
 {% for place in hundred.place_set.all %}
-addMarker('{{place.location.y}}', '{{place.location.x}}', '{{place.grid}}', '{{place.vill}}', '{{place.vill_slug}}', '{{place.hundred}}', '{% for county in place.county.all %}{{ county }} {% endfor %}', '{{place.holding}}', '{{place.units}}', '0066FF' );
+addMarker('{{place.location.y}}', '{{place.location.x}}', '{{place.grid}}', '{{place.vill}}', '{{place.vill_slug}}', '{{place.hundred}}', '{% for county in place.county.all %}{{ county }} {% endfor %}', '{{place.population|floatformat:"-1"}}');
+//var latlng = new google.maps.LatLng({{place.location.y}}, {{place.location.x}});
+//bounds.extend(latlng);
 {% endfor %}
+//var fitmap = new google.maps.Map(document.getElementById("map_canvas"));
+//fitmap.fitBounds(bounds);
+//alert(bounds);
 </script>
 
 {% endblock %}

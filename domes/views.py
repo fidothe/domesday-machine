@@ -1,5 +1,5 @@
-import re
-import urllib2
+from operator import itemgetter
+import random, re, urllib2, uuid
 from django.conf import settings
 from django.contrib.gis.geos import Point, Polygon
 from django.contrib.gis.geos import fromstr
@@ -9,8 +9,9 @@ from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import Template, RequestContext, loader, Context
 from django.utils import simplejson
-from domes.forms import EmailSignupForm
-from domes.models import *
+from domes.forms import TranslateForm
+from domesday.domes.models import *
+import csv
 import util
 
 ################################
@@ -18,10 +19,26 @@ import util
 ################################
 
 def homepage(request):
-    return render_to_response('domes/homepage.html', {}, context_instance = RequestContext(request))
+    no_search_form = True
+    placeid = random.choice(random_places)
+    place = Place.objects.get(id=placeid)
+    areas = place.area.all()
+    counties = place.county.all()
+    manors = Manor.objects.filter(place__id=place.id).order_by('geld')
+    if manors.count() > 1:
+        manors_sorted = list(manors)
+        manors = sorted(manors_sorted, key=lambda x: x.geld, reverse=True)
+    tax_context = get_context(place.raw_value, "TAX")
+    pop_context = get_context(place.population, "POPULATION")
+    return render_to_response('domes/homepage.html', { 'place': place, \
+              'areas': areas, 'counties': counties, 'manors': manors, \
+              'has_image': True, 'tax_context': tax_context, \
+              'pop_context': pop_context, 'no_search_form' : no_search_form }, \
+              context_instance = RequestContext(request))
 
+# TODO: see if Django can cache this.
 def all_places_json(request):
-    places = Place.objects.all()
+    places = Place.objects.exclude(grid="XX0000").exclude(location__isnull=True)[:500]
     markers = []
     for place in places:
         place_dict = {}
@@ -32,11 +49,10 @@ def all_places_json(request):
         place_dict['vill_slug'] = place.vill_slug
         if place.hundred:
             place_dict['hundred'] = place.hundred.name
-            place_dict['hundred_slug'] = place.hundred.name_slug
         county = place.county.all()[0].name
         place_dict['county'] = county
-        place_dict['value'] = place.value
         place_dict['raw_value'] = place.raw_value
+        place_dict['population'] = place.population
         markers.append(place_dict)
     json = simplejson.dumps(markers)
     return HttpResponse(json, mimetype='application/json')
@@ -68,12 +84,15 @@ def markers_within_bounds(request):
         place_dict['value'] = place.value
         place_dict['distance'] = str(place.distance/1000).rstrip(" m")
         place_dict['raw_value'] = place.raw_value
+        place_dict['population'] = place.population
         markers.append(place_dict)
     json = simplejson.dumps(markers)
     return HttpResponse(json, mimetype='application/json')
 
 def map(request):
-    return render_to_response('domes/map.html', { 'has_map' : True, }, context_instance = RequestContext(request))
+    places = Place.objects.exclude(grid="XX0000").exclude(location__isnull=True)
+    return render_to_response('domes/map.html', { 'has_map' : True, 'places': places }, 
+        context_instance = RequestContext(request))
 
 ################################
 # Images
@@ -90,49 +109,126 @@ def image(request, county, number):
     county_object = get_object_or_404(County, name_slug=county_slug)
     filepath = "%s/%s.png" % (county_object.short_code.lower(), number)
     images = Image.objects.filter(image=filepath)
+    # Check for next/previous images
+    next_number = int(number_clean)+1
+    previous_number = int(number_clean)-1
+    if len(str(next_number))==1: next_number = "0" + str(next_number)
+    if len(str(previous_number))==1: previous_number = "0" + str(previous_number)
+    next_path = "%s/%s.png" % (county_object.short_code.lower(), next_number)
+    previous_path = "%s/%s.png" % (county_object.short_code.lower(), previous_number)
+    has_previous_image = Image.objects.filter(image=next_path)
+    has_next_image = Image.objects.filter(image=next_path)
     return render_to_response('domes/image.html', { 'images': images, \
         'county': county, 'number_clean' : number_clean, \
         'filepath' : filepath }, context_instance = RequestContext(request))
+
+# TODO: would probably be better to put this in a template tag.
+def get_context(size, context_type):
+    if context_type == "POPULATION":
+        if size > settings.POP_QUIN5:
+             context = "very large"
+        elif size > settings.POP_QUIN4:
+             context = "quite large"
+        elif size > settings.POP_QUIN3:
+             context = "medium"
+        elif size > settings.POP_QUIN2:
+             context = "quite small"
+        else:
+             context = "very small"
+    elif context_type == "TAX":
+        if size > settings.TAX_QUIN5:
+             context = "very large"
+        elif size > settings.TAX_QUIN4:
+             context = "quite large"
+        elif size > settings.TAX_QUIN3:
+             context = "medium"
+        elif size > settings.TAX_QUIN2:
+             context = "quite small"
+        else:
+             context = "very small"
+    else:
+        context = ''
+    return context
 
 ################################
 # Individual places and people
 ################################
 def place(request, grid, vill_slug):
-    vill_slug = urllib2.unquote(vill_slug)
     grid = urllib2.unquote(grid)
-    place = get_object_or_404(Place, grid=grid, vill_slug=vill_slug)
+    vill_slug = urllib2.unquote(vill_slug) 
+    try: # Support old URLs.
+        place = Place.objects.get(Q(grid=grid, vill_slug=vill_slug) | Q(grid=grid, vill=vill_slug))
+    except Place.DoesNotExist:
+        raise Http404
     areas = place.area.all()
     counties = place.county.all()
-    manors = Manor.objects.filter(place__id=place.id)
+    manors = Manor.objects.filter(place__id=place.id).order_by('geld')
+    if manors.count() > 1:
+        manors_sorted = list(manors)
+        manors = sorted(manors_sorted, key=lambda x: x.geld, reverse=True)
+    tax_context = get_context(place.raw_value, "TAX")
+    pop_context = get_context(place.population, "POPULATION")
     return render_to_response('domes/place.html', { 'place': place, \
               'areas': areas, 'counties': counties, 'manors': manors, \
-              'has_image': True }, \
+              'has_image': True, 'tax_context': tax_context, 'pop_context': pop_context }, \
               context_instance = RequestContext(request))
 
 def county(request, county_slug):
-    place = get_object_or_404(County, name_slug=county_slug)
+    county_slug = urllib2.unquote(county_slug) 
+    try: # Support old URLs.
+        county = County.objects.get(Q(name_slug=county_slug) | Q(name=county_slug))
+    except County.DoesNotExist:
+        raise Http404
     places = Place.objects.filter(county=county)
-    return render_to_response('domes/county.html', { 'places' : places  }, \
-        context_instance = RequestContext(request))
+    if places.collect():
+        centre = places.collect().centroid
+    else:
+        centre = None
+    return render_to_response('domes/county.html', { 'places' : places, \
+              'county' : county, 'centre': centre }, context_instance = RequestContext(request))
 
-def hundred(request, hundred_name_slug):
-    hundred_name_slug = urllib2.unquote(hundred_name_slug)
-    hundred = Hundred.objects.get(name_slug=hundred_name_slug)
+def hundred(request, hundred_slug):
+    hundred_slug = urllib2.unquote(hundred_slug) 
+    try: # Support old URLs.
+        hundred = Hundred.objects.get(Q(name_slug=hundred_slug) | Q(name=hundred_slug))
+    except Hundred.DoesNotExist:
+        raise Http404
     places = Place.objects.filter(hundred=hundred)
     if places.collect():
         centre = places.collect().centroid
     else:
         centre = None
     return render_to_response('domes/hundred.html', { 'hundred': hundred, \
-          'centre': centre }, context_instance = RequestContext(request))
+          'centre': centre, 'places' : places }, \
+          context_instance = RequestContext(request))
 
-# To do: work out how to get places here. 
-def person(request, namesidx, name_slug):
-    person = Person.objects.get(namesidx=namesidx)
-    lord66_manors = Manor.objects.filter(lord66=person)
-    centre = None
-    return render_to_response('domes/person.html', { 'person' : person, \
-       'centre': centre }, context_instance = RequestContext(request))
+def name(request, namesidx, name_slug):
+    person = get_object_or_404(Person, namesidx=namesidx)
+    places_lord66 = Place.objects.filter(manors__lord66=person)
+    places_overlord66 = Place.objects.filter(manors__overlord66=person)
+    places_lord86 = Place.objects.filter(manors__lord86=person)
+    places_teninchief = Place.objects.filter(manors__teninchief=person)  
+    all_places = places_lord66 | places_overlord66 | places_lord86 | places_teninchief
+    if all_places.collect():
+        centre = all_places.collect().centroid
+    else:
+        centre = None
+    colour_lord66 = '6699FF' # pale blue
+    colour_overlord66 = '0066CC' # dark blue 
+    colour_lord86 = 'FF6666' # pale red
+    colour_teninchief = 'CC0000' # dark red
+    num_pre_conquest = sum([lord.place.count() for lord in person.lord66.all()])
+    num_pre_conquest += sum([lord.place.count() for lord in person.overlord66.all()])
+    num_post_conquest = sum([lord.place.count() for lord in person.lord86.all()])
+    num_post_conquest += sum([lord.place.count() for lord in person.teninchief.all()])
+    return render_to_response('domes/name.html', { 'person': person, \
+       'places_lord66' : places_lord66, 'places_overlord66' : places_overlord66, 
+       'places_lord86' : places_lord86, 'places_teninchief' : places_teninchief, 
+       'centre': centre, 'colour_lord66': colour_lord66, \
+       'colour_overlord66': colour_overlord66, 'colour_lord86': colour_lord86, \
+       'colour_teninchief' : colour_teninchief, 'num_pre_conquest': num_pre_conquest,\
+       'num_post_conquest': num_post_conquest, 'centre': centre }, \
+            context_instance = RequestContext(request))
 
 ################################ 
 # Search
@@ -151,8 +247,8 @@ def search(request):
 # Statistics listings
 ################################
 def stats(request):
-    counties = County.objects.exclude(short_code="LAN").order_by('Person')
-    return render_to_response('domes/stats.html', { 'counties' : counties, }, 
+    top_pop = Place.objects.all()
+    return render_to_response('domes/stats.html', { 'top_pop' : top_pop[:9], }, 
            context_instance = RequestContext(request))
 
 ################################
@@ -170,20 +266,60 @@ def all_places(request):
     return render_to_response('domes/all_places.html', { 'places' : places }, 
                  context_instance = RequestContext(request))
 
-def all_people(request):
+def all_names(request):
     index_char = request.GET.get('indexChar', 'a')
     people = Person.objects.filter(name__istartswith=index_char).order_by('name')
            #Q(lord66__isnull=False) | Q(overlord66__isnull=False) \
             #   | Q(lord86__isnull=False) | Q(teninchief__isnull=False)
-    return render_to_response('domes/all_people.html', { 'people' : people, }, 
+    return render_to_response('domes/all_names.html', { 'people' : people, }, 
                context_instance = RequestContext(request))
 
 ################################
-# Generic pages
+# Translation pages
 ################################
 
-def translate(request):
-    return render_to_response('domes/translate.html', {}, context_instance = RequestContext(request))
+def translate(request, county=None):
+    if county:
+        county = get_object_or_404(County.objects, name_slug=county)
+        # Get all entries with no associated EnglishTranslations
+        entries = Manor.objects.filter(county=count)
+    else: 
+        entries = Manor.objects.filter()
+    translated = int (EnglishTranslation.objects.count() / Manor.objects.count())
+    top_users = User.objects.all()
+    return render_to_response('domes/translate.html', { 'translated': translated, 
+           'top_users' : top_users }, context_instance = RequestContext(request))
+
+def crowdsource(request, structidx):
+    manor = Manor.objects.get(structidx=structidx)
+    # TODO: add logic to check if there is a translation already.
+    # if manor.englishtranslation is not None: 
+    #     return HttpResponseRedirect('/translate/')
+    if request.method == 'POST': 
+        if request.user.is_authenticated():
+            user = request.user
+        else:
+            user = None
+        form = TranslateForm(request.POST) 
+        if form.is_valid(): 
+            text = form.cleaned_data['transcription']
+            ip_address = "127.0.0.1"
+            #ip_address = request.META['HTTP_X_FORWARDED_FOR']
+            et = EnglishTranslation.objects.create(text=text,
+               user=user, manor_id=structidx, user_ip=ip_address)
+            et.save()
+            return HttpResponseRedirect('/translated/') 
+    else:
+        form = TranslateForm() # An unbound form
+    return render_to_response('domes/crowdsource.html', { 'manor': manor,
+         'form': form, }, context_instance = RequestContext(request))
+
+def translated(request):
+    return render_to_response('domes/translated.html', {}, context_instance = RequestContext(request))
+        
+################################
+# Generic pages
+################################
 
 def book(request):
     return render_to_response('domes/book.html', { }, context_instance = RequestContext(request))
@@ -202,7 +338,98 @@ def api(request):
 ####################################
 def about(request):
     return render_to_response('domes/about.html', context_instance = RequestContext(request))
- 
+
+####################################
+# Cropping files.
+####################################
+    
+def crop_all(request):
+    essex_files = ImageFile.objects.filter(county="ESS")
+    norfolk_files = ImageFile.objects.filter(county="NFK")
+    suffolk_files = ImageFile.objects.filter(county="SUF")
+    return render_to_response('domes/crop_files.html', { 'essex_files' : essex_files, 
+      'suffolk_files' : suffolk_files, 'norfolk_files' : norfolk_files  },
+      context_instance = RequestContext(request))
+
+def crop_file(request, file_id):
+    file_id = file_id.split("_")
+    county = get_object_or_404(County.objects, name_slug=file_id[0])
+    filename = file_id[1] + '.png'
+    image_file = get_object_or_404(ImageFile.objects, county=county, filename=filename)
+    images_markup = Image.objects.filter(ld_file=image_file)
+    image_width = int(image_file.raw_width / settings.CROP_SCALE_FACTOR)
+    image_height = int(image_file.raw_height / settings.CROP_SCALE_FACTOR)
+    return render_to_response('domes/crop.html', { 'image' : image_file, \
+               'images_markup' : images_markup, 'image_width' : image_width, \
+               'image_height' : image_height }, 
+               context_instance = RequestContext(request))
+
+def crop_results(request):
+    response = HttpResponse(mimetype='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=crop_results.csv'
+    writer = csv.writer(response)
+    image_files = ImageFile.objects.all()
+    writer.writerow(['Filename', 'Structidx', \
+                      'X1', 'X2', 'Y1', 'Y2'])
+    for image_file in image_files:
+        for image in image_file.image_set.all():
+             writer.writerow([ "%s/%s" % (image_file.county, image_file.filename), image.manor.structidx, \
+                image.x1, image.x2, image.y1, image.y2])
+    return response
+    
+def load_tags(request):
+    photo_id = request.GET.get("photoID")
+    ids = photo_id.split("_")
+    county = County.objects.get(short_code__iexact=ids[0])
+    image_file = ImageFile.objects.get(county=county, filename=ids[1])
+    images = Image.objects.filter(ld_file=image_file)
+    results_list = []
+    for image in images: 
+        results = {}
+        results["id"] = image.id
+        results["photoid"] = photo_id
+        results["message"] = image.manor.structidx
+        # Scale width and height for client-side display.
+        results["x"] = float(image.x1 / settings.CROP_SCALE_FACTOR)
+        results["y"] = float(image.y1 / settings.CROP_SCALE_FACTOR)
+        results["height"] = float((image.y2-image.y1) / settings.CROP_SCALE_FACTOR)
+        results["width"] = float((image.x2-image.x1) / settings.CROP_SCALE_FACTOR)
+        results_list.append(results)
+    json = simplejson.dumps(results_list)
+    return HttpResponse(json, mimetype='application/json')
+
+def save_tags(request):
+    photo_id = request.GET.get("photoID")
+    ids = photo_id.split("_")
+    structidx = request.GET.get("message")
+    # The X/Y coordinates. Multiply by scale factor.
+    client_x = int(request.GET.get("x"))
+    client_y = int(request.GET.get("y"))
+    client_width = int(request.GET.get("width"))
+    client_height = int(request.GET.get("height"))
+    x = client_x * settings.CROP_SCALE_FACTOR
+    y = client_y * settings.CROP_SCALE_FACTOR
+    x2 = (client_x + client_width) * settings.CROP_SCALE_FACTOR
+    y2 = (client_y + client_height) * settings.CROP_SCALE_FACTOR
+    county = County.objects.get(short_code__iexact=ids[0])
+    image_file = get_object_or_404(ImageFile.objects, county=county, filename=ids[1])
+    manor = get_object_or_404(Manor.objects, structidx=structidx)
+    new_image, created = Image.objects.get_or_create(manor=manor, \
+              image=ids[1], ld_file=image_file, 
+              x1=x, y1=y, x2=x2, y2=y2)
+    json = simplejson.dumps(new_image.id)
+    return HttpResponse(json, mimetype='application/json')
+    
+def delete_tags(request):
+    image_id = request.GET.get("id")
+    Image.objects.get(id=image_id).delete()
+    json = simplejson.dumps("ok")
+    return HttpResponse(json, mimetype='application/json')
+
+def all_tags(request):
+    json = simplejson.dumps('yes')
+    return HttpResponse(json, mimetype='application/json')
+    
 def help(request):
     return render_to_response('domes/help.html', context_instance = RequestContext(request))   
 
@@ -343,4 +570,7 @@ def natsort(list_):
 #   [!6!    !6!]    Not in Domesday Book, from satellite text (Feudal Book of Bury)
 # <12a> Folio numbers are recorded in chevrons
 
-random_places = [ 6010,  6090,  6110,  6130,  6140,  6160,  6170,  6220,  6240,  6260,  6270,  6300,  6320,  6340,  6350,  6380,  6430,  6460,  6500,  6510,  6520,  6530,  6560,  6570,  6620,  6640,  6670,  6770,  6830,  6840,  6850,  6870,  6880,  6910,  7000,  7010,  7050,  7060,  7100,  7150,  7160,  7180,  7230,  7350,  7380,  7440,  7500,  7660,  7670,  7790,  7900,  7910,  7920,  7960,  7970,  7980,  8070,  8080,  8100,  8110,  215040,  215050,  215070,  215150,  215190,  215280,  215310,  215320,  215380,  215390,  215410,  215420,  215430,  215440,  215480,  215500,  215540,  215550,  215620,  215630,  215670,  215680,  215700,  215710,  215820,  215830,  215840,  215890,  215930,  215950,  215990,  216020,  216040,  216050,  216200,  216220,  216300,  216330,  216340,  216350,  216420,  216530,  216540,  216610,  216620,  216630,  216660,  216730,  216750,  216770,  216980,  217000,  217120,  217170,  217180,  217210,  217220,  217360,  217390,  217400,  226520,  226730,  226740,  226820,  226840,  226850,  226940,  226990,  227000,  227200,  227220,  227240,  227300,  227330,  227520,  227610,  227620,  227630,  227680,  227700,  227740,  227780,  227860,  227870,  227880,  227900,  227920,  228190,  228310,  228370,  228430,  228450,  228500,  228510,  228560,  228970,  229110,  229120,  229180,  229310,  229370,  229410,  229420,  229530,  229560,  229570,  229610,  229650,  229670,  229770,  229780,  229790,  229820,  230000,  230090,  230100,  230110,  230130,  230160,  230290,  67600,  67630,  67640,  67840,  67850,  67860,  67870,  67910,  67940,  67970,  68030,  68040,  68050,  68070,  68080,  68100,  68150,  68180,  68200,  68210,  68220,  68230,  68270,  68290,  68300,  68310,  68330,  68390,  68400,  68410,  68430,  68460,  68480,  68510,  68520,  68540,  68560,  68660,  68670,  68690,  68710,  68730,  68750,  68790,  68810,  50650,  50740,  50750,  50760,  50770,  50780,  50810,  50820,  50840,  50850,  50860,  50870,  50880,  50920,  50930,  50940,  50950,  50960,  50980,  50990,  51010,  51020,  51030,  51040,  51050,  51060,  51080,  51090,  51100,  51120,  51140,  51160,  51170,  51200,  51210,  51220,  51230,  51240,  51250,  51270,  51290,  51300,  51310,  51320,  51330,  51360,  51380,  51390,  51420,  51430,  51450,  51460,  51470,  51480,  51500,  51510,  51520,  51530,  51540,  51550,  77580,  77600,  77620,  77640,  77660,  77670,  77690,  77700,  77710,  77720,  77730,  77780,  77800,  77830,  77890,  77940,  77950,  77960,  78030,  78040,  78060,  78080,  78090,  78100,  78110,  78140,  78230,  78240,  78250,  78280,  78290,  78330,  78340,  78420,  78430,  78520,  78560,  78600,  78660,  78670,  78680,  78720,  78770,  78800,  78910,  78930,  78980,  79030,  79070,  79080,  79090,  79100,  79110,  79160,  79180,  79220,  79250,  79260,  79300,  79310,  128300,  128320,  128340,  128350,  128360,  128370,  128380,  128390,  128410,  128420,  128430,  128440,  128450,  128460,  128470,  128480,  128500,  128510,  128520,  128530,  128540,  128550,  128560,  128570,  128580,  128590,  128600,  128610,  128620,  128630,  128650,  128660,  128670,  128680,  128690,  128700,  128710,  128720,  128730,  128740,  128750,  128760,  128770,  128780,  128790,  128810,  128820,  128840,  128850,  128870,  128880,  128890,  128900,  128910,  128920,  128930,  128940,  128950,  128970,  128980,  182835,  183010,  183030,  183060,  183150,  183200,  183230,  183250,  183290,  183350,  183440,  183460,  183500,  183570,  183633,  183636,  183640,  183650,  183700,  183710,  183830,  183850,  183890,  183930,  184040,  184050,  184230,  184340,  184420,  184540,  184570,  184590,  184890,  185050,  185160,  185260,  185340,  185540,  185650,  185760,  185910,  185920,  185990,  186000,  186190,  186270,  186280,  186310,  186320,  186340,  186360,  186370,  186600,  186670,  186830,  186880,  186940,  187000,  187090,  187100,  106170,  106180,  106190,  106210,  106290,  106310,  106320,  106340,  106350,  106390,  106400,  106630,  106660,  106680,  106690,  106700,  106740,  106820,  106840,  106920,  107100,  107170,  107250,  107290,  107320,  107370,  107500,  107550,  107590,  107630,  107640,  107670,  107680,  107690,  107700,  107730,  107750,  107900,  108130,  108150,  108190,  108200,  108210,  108240,  108270,  108430,  108580,  108620,  108690,  108850,  108900,  108980,  109160,  109250,  109370,  109410,  109480,  109530,  109570,  109580,  27335,  27370,  27400,  27480,  27500,  27510,  27530,  27550,  27580,  27600,  27630,  27700,  27730,  27740,  27760,  27790,  27800,  27820,  27850,  27900,  27910,  27920,  27940,  27970,  27980,  28000,  28010,  28020,  28040,  28070,  28130,  28140,  28180,  28210,  28250,  28260,  28270,  28290,  28340,  28380,  28400,  28420,  28430,  28440,  28450,  28470,  28480,  28520,  28590,  28630,  28650,  28660,  28680,  28690,  28700,  28730,  28740,  28760,  28800,  28810,  103980,  103990,  104020,  104040,  104050,  104080,  104100,  104110,  104130,  104140,  104170,  104190,  104230,  104250,  104260,  104290,  104320,  104340,  104350,  104360,  104370,  104390,  104400,  104420,  104430,  104450,  104470,  104480,  104540,  104570,  104580,  104590,  104600,  104610,  104640,  104650,  104660,  104670,  104680,  104710,  104730,  104740,  104780,  104840,  104860,  104870,  104890,  104910,  104970,  104990,  105030,  105050,  105080,  105150,  105250,  105260,  105300,  105360,  105370,  105400,  310,  500,  755,  855,  890,  930,  940,  970,  1020,  1040,  1050,  1060,  1070,  1080,  1100,  1130,  1180,  1190,  1200,  1220,  1230,  1240,  1280,  1310,  1320,  1330,  1340,  1350,  1370,  1375,  1430,  1450,  1475,  1480,  1490,  1510,  1540,  1560,  1570,  1590,  1600,  1610,  1620,  1640,  1650,  1660,  1670,  1680,  1730,  1760,  1770,  1780,  1810,  1820,  1840,  1850,  1860,  1870,  1880,  1890,  ]
+random_places = [52456, 38396,  8326, 25661, 22771, 58621, \
+     58171, 38721, 15286,  9781,  9766, 25931,  2661, 70051, 56916, \
+     12201, 60251, 43791,  7826, 49196,  5061, 65551, 29646, 36971, 57416,\
+     61166]

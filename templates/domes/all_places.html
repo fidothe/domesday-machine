@@ -1,7 +1,7 @@
 {% extends "domes/base.html" %}
 
 {% block title %}Places{% endblock %}
-{% block description %}All places listed in the Domesday Book{% endblock %}
+{% block description %}All places listed in Domesday Book{% endblock %}
 {% block nav-class %}nav-places{% endblock %}
 
 {% block content %}
@@ -48,7 +48,8 @@
 
 <ul>
 {% for place in places %}
-<li><a href="{% url place place.grid place.vill_slug %}">{{ place.vill }}</a>,
+<li><a href="{{ place.get_absolute_url }}">
+{{ place.vill }}</a>,
 {% for county in place.county.all %}{{ county }} {% endfor %}</li>
 {% endfor %}
 </ul>

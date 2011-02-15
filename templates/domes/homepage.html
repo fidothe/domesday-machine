@@ -1,15 +1,18 @@
 {% extends "domes/base.html" %}
 
 {% block title %}Home {% endblock %}
-{% block description %}Complete map of the Domesday Book of 1086{% endblock %}
+{% block description %}Complete map of Domesday Book of 1086{% endblock %}
 
 {% block content %}
 
 <div class="content">
+<script src="{{ MEDIA_URL }}js/jquery.qtip-1.0.0-rc3.min.js"></script>
+<script type="text/javascript" src="{{ MEDIA_URL }}js/thickbox.js"></script>
+<link rel="stylesheet" href="{{ MEDIA_URL }}css/thickbox.css" type="text/css" media="screen" />
 
-<!-- <div id="homepage_search">
+<div id="homepage_search">
 <form id="homepage_form" name="f" action="/search/" method="get" style="float: left; ">
-<label>Type in a town or postcode (e.g. Cambridge, SW1A 1AA) to find Domesday places:&nbsp;</label>
+<label>Type in a town or postcode (e.g. Leicester, SW1A 1AA) to find Domesday places:&nbsp;</label>
 <input type="search" id="geo" name="geo" size="40" autofocus />
   <script>
     if (!("autofocus" in document.createElement("input"))) {
@@ -19,25 +22,488 @@
 	&nbsp; 
 <input type="submit" value="Search"> 
 </form>
-<div style="clear: both;"></div>
-</div> -->
+</div>
 
-<!-- <p>A project to translate Domesday Book, the great survey of England from 1086.</p>
-<table cellpadding="2em" cellspacing="2em" width="100%">
-<tr>
-<td width="33%" valign="top">
-<h3>What is all this about?</h3>
-</td>
-<td width="33%" valign="top">
-<h3>Recent translations</h3>
-&raquo; Help us translate the text
-</td>
-<td width="33%" valign="top">
-<h3>Recent forum posts</h3>
-&raquo; Join the forums
-</td>
-</tr>
-</table> -->
+<div id="homepage_place">
+
+<div id="map_canvas" style="width: 40%; height: 400px; float: right; margin-left: 10px;"></div>
+
+<p class="header">RANDOM ENTRY: <a href="{{ place.get_absolute_url }}">{{ place.vill.upper }}</a>, 
+{% for county in counties %}
+{% if not forloop.first %}/{% endif %}{{ county }}
+{% endfor %}
+</p>
+
+<!-- Warn about unknown locations -->
+{% if place.status %}
+<ul>
+<li>[{{ place.status }}]</li>
+</ul>
+{% else %}
+{% if place.grid == "unknown" or place.grid == 'XX0000' %}
+<ul>
+<li>The location of this place is unknown</li>
+</ul>
+{% endif %}
+{% endif %}
+
+<!-- Summary info: hundreds, counties etc -->
+<ul>
+{% if place.hundred %}<li>
+<span id="hundred" class="section_title tooltip">Hundred</span>:
+<a href="{{ place.hundred.get_absolute_url }}"> {{ place.hundred }}</a>
+</li>
+{% endif %}
+{% if areas %}<li>
+<span id="area" class="section_title tooltip">Area</span>: 
+{% for area in areas %}{{ area }} {% endfor %}
+</li>
+{% endif %}
+<li>
+<span id="county" class="section_title tooltip">County</span>: 
+{% for county in counties %}
+{% if not forloop.first %}/{% endif %}
+<a href="{{ county.get_absolute_url }}">{{ county }}</a> 
+{% endfor %}
+</li>
+{% if place.population %}
+<li><span id="population" class="section_title tooltip">Total population</span>:  
+{{ place.population|floatformat:"-1" }} {{ place.population|pluralize:"person,people" }}
+(<span id="pop_context" class="tooltip">{{pop_context}}</span>).</li>
+{% endif %}
+{% if place.value %}
+<span id="taxpaid" class="section_title tooltip">Total tax paid</span>:  
+{% for key,value in place.value.items %}{% if not forloop.first %}; {% endif %}{{ value|floatformat }}
+{{key}}{% endfor %}
+(<span id="tax_context" class="tooltip">{{tax_context}}</span>).</li>
+{% endif %}
+</ul>
+
+
+<!-- Number of entries -->
+{% if manors|length > 1 %}
+<p>{{ place.vill }} appears in {{ manors|length }} 
+{{ manors|length|pluralize:"entry,entries" }} in Domesday Book (<a id="showall">show all</a>).</p>
+{% endif %}
+
+<!-- Each entry -->
+{% for manor in manors %}
+
+{% if not forloop.first %}
+<div class="hideme" style="display: none;">
+{% endif %}
+
+<!-- Entry title -->
+{% if manors|length > 1 %}
+<p><strong>❧ ENTRY {{ forloop.counter }} ❧</strong></p>
+{% endif %}
+
+<!-- Entry image -->
+<div id="image-display">
+{% if manor.image_set.count %}
+{% for image in manor.image_set.all %}
+<a href="{{ MEDIA_URL }}images/cropped/{{ image.manor.structidx }}-{{forloop.counter}}.png" class="thickbox" rel="gallery-domesday">
+<img width="400px" height="100px" src="{{ MEDIA_URL }}images/cropped/{{ image.manor.structidx  }}-{{forloop.counter}}_thumb.png" 
+title="Entry {{forloop.counter}} for {{ place.vill }} in Domesday Book" style="margin:auto;"/>
+</a>
+
+<!-- {% if manor.englishtranslation %}
+{{ manor.englishtranslation}}
+{% else %}
+<form method="get" action="/translate/{{manor.structidx}}">
+<input type="submit" class="button" value="Translate this entry!" />
+</form>
+{% endif %} -->
+
+<!-- <a href="">
+<img src="{{ MEDIA_URL }}images/book.png" height="42px" 
+    title="See on {{ image.county.name }}, page {{ image.filenum }}" />
+</a> -->
+{% endfor %}
+{% else %}
+<p>❧❧ Images for Essex, Norfolk and Suffolk coming soon! ❧❧</p>
+{% endif %}
+</div>
+
+<!-- Entry details -->
+<ul>
+{% if manor.headofmanor %}
+<li><strong>Head of manor:</strong> {{ manor.headofmanor }}.</li>
+{% endif %}
+
+{% if manor.geld %}
+<li>
+<span id="value" class="section_title tooltip">Value</span>: 
+{% if manor.geld %}Taxable value {{ manor.geld|floatformat }} {{manor.gcode}}. {% endif %}
+{% if manor.value66 %}Value to lord in 1066 £{{ manor.value66|floatformat }}. {% endif %}
+{% if manor.value86 %}Value to lord in 1086 £{{ manor.value86|floatformat }}. {% endif %}
+{% if manor.valueqr %}Value to lord c. 1070 £{{ manor.valueqr|floatformat }}. {% endif %}
+{%comment %}this needs sorting...{% if manor.value_string %}<li>Value string: {{ manor.value_string }}</li>{% endif %}{%endcomment%}
+{% if manor.villtax %}{{ manor.villtax }} villtax. {% endif %}
+{% if manor.taxedon %}Taxed on {{ manor.taxedon }}. {% endif %}
+{% if manor.payments %}Payments of {{ manor.payments }} {% if manor.paymentsunits %} {{ manor.paymentsunits }}{% endif %}. {% endif %}
+</li>
+{% endif %}
+
+{% if manor.total_people > 0.0 %}
+<li>
+<span id="people" class="section_title tooltip">People</span>: 
+{% if manor.villagers %}{{ manor.villagers|floatformat }} villager{{ manor.villagers|pluralize }}. {% endif %}
+{% if manor.smallholders %}{{ manor.smallholders|floatformat }} smallholder{{ manor.smallholders|pluralize }}. {% endif %}
+{% if manor.slaves %}{{ manor.slaves|floatformat }} slave{{ manor.slaves|pluralize }}. {% endif %}
+{% if manor.femaleslaves %}{{ manor.femaleslaves|floatformat }} female slave{{ manor.femaleslaves|pluralize }}. {% endif %}
+{% if manor.freemen %}{{ manor.freemen|floatformat }} freemen. {% endif %}
+{% if manor.free2men %}{{ manor.free2men|floatformat }} free men. {% endif %}
+{% if manor.priests %}{{ manor.priests|floatformat }} priest{{ manor.priests|pluralize }}. {% endif %}
+{% if manor.cottagers %}{{ manor.cottagers|floatformat }} cottager{{ manor.cottagers|pluralize }}. {% endif %}
+{% if manor.otherpop %}{{ manor.otherpop|floatformat }} other population. {% endif %}
+{% if manor.miscpop and manor.miscpopcategories %}{{ manor.miscpop|floatformat }} {{ manor.miscpopcategories }}. {% endif %}
+{% if manor.burgesses %}{{ manor.burgesses|floatformat }} burgess{{ manor.burgesses|pluralize:",es" }}. {% endif %}
+</li>
+{% endif %}
+
+{% if manor.has_ploughland %}
+<li>
+<span id="ploughland" class="section_title tooltip">Ploughland</span>:
+{% if manor.ploughlands %}{{ manor.ploughlands|floatformat }} ploughland{{ manor.ploughlands|pluralize }}{% if manor.pcode %} ({{ manor.pcode }}){% endif %}. {% endif %}
+{% if manor.lordsploughs %}{{ manor.lordsploughs|floatformat }} lord's plough teams. {% endif %}
+{% if manor.lordsploughspossible %}{{ manor.lordsploughspossible|floatformat }} lord's plough teams possible. </li>{% endif %}
+{% if manor.mensploughs %}{{ manor.mensploughs|floatformat }} men's plough teams. {% endif %}
+<!-- {% if manor.totalploughs %}<li>Total plough teams: {{ manor.totalploughs }}</li>{% endif %} -->
+<!-- {% if manor.mensploughspossible %}{{ manor.mensploughspossible }} possible men's plough teams.{% endif %} -->
+<!-- {% if manor.totalploughspossible %}<li>Men's plough teams: {{ manor.totalploughspossible }}</li>{% endif %} -->
+</li>
+{% endif %}
+
+{% if manor.has_other_land %}
+<li>
+<span id="otherland" class="section_title tooltip">Other resources</span>: 
+{% if manor.lordsland %}{{ manor.lordsland }} lord's lands. {% endif %}
+{% if manor.newland %}{{ manor.newland }} new lands. {% endif %}
+{% if manor.meadow %}Meadow {{ manor.meadow }} {{manor.meadowunits}}. {% endif %}
+{% if manor.pasture %}Pasture {{ manor.pasture }} {{manor.pastureunits}}. {% endif %}
+{% if manor.woodland %}Woodland {{ manor.woodland }} {{manor.woodlandunits}}. {% endif %}
+{% if manor.mills %}{{ manor.mills|floatformat }} mill{{ manor.mills|pluralize }}{% if manor.millvalue %}, value {{ manor.millvalue}}{% endif %}. {% endif %}
+{% if manor.fisheries %}{{ manor.fisheries|floatformat }} fisher{{ manor.fisheries|pluralize:"y,ies" }}. {% endif %}
+{% if manor.salthouses %}{{ manor.salthouses|floatformat }} salthous{{ manor.salthouses|pluralize:"e,es" }}.{% endif %}
+{% if manor.churches %}{{ manor.churches|floatformat }} church{{ manor.churches|pluralize:",es" }}. {% endif %}
+{% if manor.churchland %}{{ manor.churchland }} church lands. {% endif %}
+</li>
+{% endif %}
+<!-- {% if manor.notes %}<li><strong>Notes on the data</strong>: {{ manor.notes }}</li>{% endif %} -->
+
+{% if manor.has_livestock_1066 %}
+<li>
+<span id="livestock1066" class="section_title tooltip">Livestock in 1066</span>: 
+{% if manor.cobs_1066 %}{{manor.cobs_1066 }} cobs. {% endif %}
+{% if manor.cattle_1066 %}{{manor.cattle_1066 }} cattle. {% endif %}
+{% if manor.cows_1066 %}{{manor.cows_1066 }} cows. {% endif %}
+{% if manor.pigs_1066 %}{{manor.pigs_1066 }} pigs. {% endif %}
+{% if manor.sheep_1066 %}{{manor.sheep_1066 }} sheep. {% endif %}
+{% if manor.goats_1066 %}{{manor.goats_1066 }} goats. {% endif %}
+{% if manor.beehives_1066 %}{{manor.beehives_1066 }} beehives. {% endif %}
+{% if manor.wild_mares_1066 %}{{manor.wild_mares_1066 }} wild mares. {% endif %}
+{% if manor.other_1066 %}{{manor.other_1066 }} {{manor.other_codes_1066 }}. {% endif %}
+</li>
+{% endif %}
+
+{% if manor.has_livestock_1086 %}
+<li>
+<span id="livestock1086" class="section_title tooltip">Livestock in 1086</span>: 
+{% if manor.cobs_1086 %}{{manor.cobs_1086 }} cobs. {% endif %}
+{% if manor.cattle_1086 %}{{manor.cattle_1086 }} cattle. {% endif %}
+{% if manor.cows_1086 %}{{manor.cows_1086 }} cows. {% endif %}
+{% if manor.pigs_1086 %}{{manor.pigs_1086 }} pigs. {% endif %}
+{% if manor.sheep_1086 %}{{manor.sheep_1086 }} sheep. {% endif %}
+{% if manor.goats_1086 %}{{manor.goats_1086 }} goats. {% endif %}
+{% if manor.beehives_1086 %}{{manor.beehives_1086 }} beehives. {% endif %}
+{% if manor.wild_mares_1086 %}{{manor.wild_mares_1086 }} wild mares. {% endif %}
+{% if manor.other_1086 %}{{manor.other_1086 }} {{manor.other_codes_1086 }}. {% endif %}
+</li>
+{% endif %}
+
+<!-- Owners -->
+
+{% if manor.lord66.all %}
+<li>
+<span id="lord66" class="section_title tooltip">Lord{{ manor.lord66.count|pluralize }} in 1066</span>: 
+{% for lord66 in manor.lord66.all %}
+<a href="{% url name lord66.namesidx lord66.name_slug %}">{{ lord66.name }}</a>{% if forloop.last %}.{% else %}; {% endif %}
+{% endfor %}
+</li>
+{% endif %}
+
+{% if manor.overlord66.all %}
+<li>
+<span id="lord86" class="section_title tooltip">Overlord{{ manor.overlord66.count|pluralize }} in 1066</span>: 
+{% for overlord66 in manor.overlord66.all %}
+<a href="{% url name overlord66.namesidx overlord66.name_slug %}">{{ overlord66.name }}</a>{% if forloop.last %}.{% else %}; {% endif %}
+{% endfor %}
+</li>
+{% endif %}
+
+{% if manor.lord86.all %}
+<li>
+<span id="lord86" class="section_title tooltip">Lord{{ manor.lord86.count|pluralize }} in 1086</span>: 
+{% for lord86 in manor.lord86.all %}
+<a href="{{ lord86.get_absolute_url }}">{{ lord86.name }}</a>{% if forloop.last %}.{% else %}; {% endif %}
+{% endfor %}
+</li>
+{% endif %}
+
+{% if manor.teninchief.all %}
+<li>
+<span id="teninchief" class="section_title tooltip">Tenant{{ manor.teninchief.count|pluralize }}-in-chief in 1086</span>: 
+{% for teninchief in manor.teninchief.all %}
+<a href="{{ teninchief.get_absolute_url }}">{{ teninchief.name }}</a>{% if forloop.last %}.{% else %}; {% endif %}
+{% endfor %}
+</li>
+{% endif %}
+
+{% if manor.place.count > 1 %}
+<li>
+<span id="teninchief" class="section_title tooltip">Places mentioned in this entry</span>: 
+{% for other_place in manor.place.all %}
+<a href="{{ other_place.get_absolute_url }}">{{ other_place }}</a>{% if forloop.last %}.{% else %}; {% endif %}
+{% endfor %}
+</li>
+{% endif %}
+
+</ul>
+
+<!-- Structidx: {{manor.structidx}} -->
+{% if not forloop.first %}
+</div>
+{% endif %}
+{% endfor %}
+
+<br/>
+<!-- Place id: {{place.id}} -->
+
+
+<script type="text/javascript">
+//tooltip style used throughout site
+$.fn.qtip.styles.tipstyle = { 
+   background: '#C0C0C0',
+   color: 'black',
+   textAlign: 'left',
+   border: {
+      width: 7,
+      radius: 5,
+      color: '#C0C0C0'
+   },
+   tip: 'bottomLeft',
+   name: 'dark'
+}
+
+$('span#hundred').qtip({
+   content: '<span class="tooltip_text">Hundreds are smaller than counties.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#taxpaid').qtip({
+   content: '<span class="tooltip_text">The total tax paid by all the owners.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#population').qtip({
+   content: '<span class="tooltip_text">Population is counted in heads of families, \
+         so the real population was probably several times larger.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#area').qtip({
+   content: '<span class="tooltip_text">Areas may be lathes, rapes, ridings or other areas \
+             inbetween hundred and county in size.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#county').qtip({
+   content: '<span class="tooltip_text">Counties in Domesday are broadly similar to those of today - \
+            except for Lancashire, which didn\'t exist! Sometimes places are listed under \
+            multiple counties.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#value').qtip({
+   content: '<span class="tooltip_text">Domesday is all about tax! \
+    This field shows how much tax the owner received from the villagers.\
+   </span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#people').qtip({
+   content: '<span class="tooltip_text">Population in 1086 - probably \
+       heads of household, rather than individuals. Villagers have the most \
+      land, followed by smallholders, then cottagers.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#ploughland').qtip({
+   content: '<span class="tooltip_text">The amount of ploughland, and \
+      the number of ploughteams working on it. Each ploughteam has 8 oxen.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#otherland').qtip({
+   content: '<span class="tooltip_text">Other resources, such as meadow, \
+       woodland, mills or salthouses. Measured according to the tax due on each - tax \
+       on woodland is often paid in pigs!</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#lord66').qtip({
+   content: '<span class="tooltip_text">Lord of the estate in 1066: \
+         the man or woman who received the profits from the holding.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+
+$('span#overlord66').qtip({
+   content: '<span class="tooltip_text">Overlord of the estate in 1066: \
+      in other words, the overlord of the lord.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#lord86').qtip({
+   content: '<span class="tooltip_text">The new owner after the Conquest. This \
+      is the immediate lord over the peasants in 1086: it may be the \
+      tenant-in-chief himself, or a tenant to whom he had \
+      granted the estate.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#teninchief').qtip({
+   content: '<span class="tooltip_text">Tenant-in-chief of the estate \
+              in 1086: holding directly of the Crown.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#pop_context').qtip({
+   content: '<span class="tooltip_text">Relative to other Domesday settlements, \
+      {{ place.vill }} had a {{ pop_context }} population.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+$('span#tax_context').qtip({
+   content: '<span class="tooltip_text">Relative to other Domesday settlements, \
+      {{ place.vill }} paid a {{ tax_context }} amount of tax.</span>',
+   style: 'tipstyle',
+   position: {
+	   corner: {
+	      target: 'topLeft',
+	      tooltip: 'bottomLeft'
+	   }
+   }
+})
+
+</script>
+
+</div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+	  //Start by showing Norfolk
+	  var markers = show_place( '{{place.location.y}}', '{{place.location.x}}', '{{place.vill}}', 
+	    '{{ place.vill_slug }}', '{{place.grid}}', 
+	    '{{place.hundred}}', 
+	    '{% for county in counties %}{% if forloop.first %}{{ county }}{% endif %}{% endfor %}',
+	    '{{ place.population }}', 12);
+	  //alert(randomFromTo(0, markers.length-1));
+	  for (i=1;i<3;i++) {
+		//google.maps.event.trigger(markers[i], 'click');
+	//	alert(i);
+	    //setTimeout("panmap()",i*2000);
+	  }
+});
+$('#showall').click(function() {
+	$(".hideme").toggle("slow");
+});
+</script>
+
+<!-- <script src="{{MEDIA_URL}}js/jquery.jloupe.js" type="text/javascript" charset="utf-8"></script>
+<img src="{{ MEDIA_URL }}images/ken/01.png" width="450" id="shape" 
+class="jLoupe" style="float:right; margin: 0px 0px 15px 0px;">-->
+<!-- <input type="submit" style="width:100px" class="button" value='Map of Domesday Book' />
+<br/>
+<input type="submit" style="width:100px" class="button" value='Help translate' />
+<br/>
+<input type="submit" style="width:100px" class="button" value='Statistics' />
+<br/>
+<input type="submit" style="width:100px" class="button" value='Places' />
+<br/>
+<input type="submit" style="width:100px" class="button" value='Names' />
+<br/>-->
 
 </div>
 

@@ -1,14 +1,14 @@
 {% extends "domes/base.html" %}
 
 {% block title %}Map {% endblock %}
-{% block description %}Complete map of all places listed in the Domesday Book{% endblock %}
-{% block nav-class %}nav-map{% endblock %}
+{% block description %}Complete map of all places listed in Domesday Book{% endblock %}
+{% block nav-class %}nav-places{% endblock %}
 {% block content %}
 
 <div class="page_title">
-<h1>Map of places in the Domesday Book</h1> 
+<h1>Map of Domesday Book</h1> 
 
-<p>The whole of England, as mapped in the Domesday Book.</p>
+<p>The whole of England, as mapped in Domesday Book. This may take some time to load!</p>
 </div>
 
 <div class="content">
@@ -19,6 +19,26 @@
 <div style="clear: both;"></div>
 
 <script type="text/javascript"> 
+function whole_map() {
+	var center = new google.maps.LatLng(52.36187505907603, -1.614990234375);
+	var options = {
+	  'zoom': 7,
+	  scrollwheel: false,
+	  'center': center,
+	  'mapTypeId': google.maps.MapTypeId.ROADMAP
+	};
+    var markers = [];
+	var map = new google.maps.Map(document.getElementById("map_canvas"), options);
+    {% for place in places %}
+		var latlng = new google.maps.LatLng({{ place.location.y }}, {{place.location.x}});
+		markers.push(new google.maps.Marker({'position': latlng}));
+		// var map_marker = createMarker({{ place.location.y }}, {{ place.location.x }}, {{ place.grid }}, 
+		// 			                   {{ place.vill }}, {{ place.vill_slug }}, {{ place.hundred }}, 
+		// 		                       'Staffordshire', {{ place.population }});
+		markers.push(map_marker);
+    {% endfor %}
+	var mc = new MarkerClusterer(map,markers);
+}
 window.onload = whole_map();
 </script>
 

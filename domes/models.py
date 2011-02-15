@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.gis.db import models
+from django.contrib.auth.models import User
 
 ####################################
 # Place-related tables
@@ -10,20 +11,28 @@ class County(models.Model):
     name_slug = models.SlugField()
     def __unicode__(self):
         return self.name
-
+    @models.permalink
+    def get_absolute_url(self):
+        return ('domes.views.county', (), {
+            'county_slug': self.name_slug })
+    
 class Area(models.Model):
     name = models.CharField(max_length=100, primary_key=True)
     name_slug = models.SlugField()
     def __unicode__(self):
         return self.name
-		
+        
 class Hundred(models.Model):
     name = models.CharField(max_length=100, primary_key=True)
     name_slug = models.SlugField()
     status = models.CharField(max_length=100, null=True, blank=True)
     def __unicode__(self):
         return self.name
-		    
+    @models.permalink
+    def get_absolute_url(self):
+        return ('domes.views.hundred', (), {
+            'hundred_slug': self.name_slug })
+            
 # Place. From PlacesForAHRC.txt
 class Place(models.Model):
     id = models.IntegerField(primary_key=True) 
@@ -41,8 +50,8 @@ class Place(models.Model):
     status = models.CharField(max_length=100, null=True, blank=True)
     def __unicode__(self):
         return self.vill
-	class Meta:
-	    ordering = ('county', 'hundred', 'vill')
+    class Meta:
+        ordering = ('hundred', 'vill')
     @property
     def value(self):
         manors = Manor.objects.filter(place__id=self.id)
@@ -50,19 +59,44 @@ class Place(models.Model):
         for manor in manors:
             if not manor.geld:
                  continue
-            if manor.gcode in total.keys():
-                 total[manor.gcode] += manor.geld
             else:
-                 total[manor.gcode] = manor.geld
+                 manor_geld = manor.geld / manor.place.count()
+            if manor.gcode in total.keys():
+                 total[manor.gcode] += manor_geld
+            else:
+                 total[manor.gcode] = manor_geld
         return total
     @property
     def raw_value(self):
         manors = Manor.objects.filter(place__id=self.id)
         total = 0.0
         for manor in manors:
+            manor_total = 0.0
             if manor.geld:
-                total += manor.geld
+                manor_total += manor.geld
+            manor_total = manor_total / manor.place.count()
+            total += manor_total           
         return total
+    @property
+    def population(self):
+        manors = Manor.objects.filter(place__id=self.id)
+        people = 0.0
+        for manor in manors:
+            manor_people = 0.0
+            people_types = [manor.villagers, manor.smallholders, manor.slaves,\
+                        manor.femaleslaves, manor.freemen, manor.free2men,\
+                        manor.priests, manor.cottagers, manor.otherpop,\
+                        manor.miscpop, manor.burgesses]
+            for p in people_types: 
+                if p: manor_people += p
+            manor_people = manor_people / manor.place.count()
+            people += manor_people
+        return people 
+    @models.permalink
+    def get_absolute_url(self):
+        return ('domes.views.place', (), {
+            'grid': self.grid,
+            'vill_slug': self.vill_slug })
     
 ####################################
 # People-related tables
@@ -79,15 +113,21 @@ class Person(models.Model):
     xrefs = models.CharField(max_length=300, null=True, blank=True, verbose_name="Cross-refs")
     def __unicode__(self):
         return self.name
+    @models.permalink
+    def get_absolute_url(self):
+        return ('domes.views.name', (), {
+            'namesidx': self.namesidx,
+            'name_slug': self.name_slug })
 
 ####################################
 # Manor-related tables
 ####################################
 # Manors - a reference to a place in a Domesday entry.
 # Everything hangs off this. From ManorsForAHRC.txt
+# But never exposed per se in front-end. 
 class Manor(models.Model):
     structidx = models.IntegerField(primary_key=True)  
-    place = models.ManyToManyField(Place, null=True, related_name="place")
+    place = models.ManyToManyField(Place, null=True, related_name="manors")
     county = models.ForeignKey(County)  
     phillimore = models.CharField(max_length=100, null=True, blank=True, verbose_name="Phillimore") 
     headofmanor = models.CharField(max_length=100, null=True, blank=True, verbose_name="Head of manor [manorial centre of group, used for aggregating data]")
@@ -204,11 +244,31 @@ class Manor(models.Model):
 ################################################
 # Image-related tables
 ################################################
+# Files for JP to mark up. 
+class ImageFile(models.Model):
+    # The relevant filename. Save like 01.png
+    filename = models.CharField(max_length=30, unique=True)
+    county = models.ForeignKey(County)
+    raw_width = models.IntegerField()
+    raw_height = models.IntegerField()
+    is_complete = models.BooleanField(default=False)
+    def __unicode__(self):
+        return "%s, %s"% (self.county.name, self.filename.split(".")[0])
+    @models.permalink
+    def get_absolute_url(self):
+        file_url =  "%s_%s" % (self.county.name_slug, self.filename.split(".")[0])
+        return ('domes.views.crop_file', (), {
+            'file_id': file_url })
+    class Meta:
+        ordering = ('county', 'filename')
+        unique_together = ("filename", "county")
+
 class Image(models.Model):
-    manor = models.ForeignKey(Manor)
+    manor = models.ForeignKey(Manor)      
     phillimore = models.CharField(max_length=100, null=True, blank=True)         
     imagesub = models.CharField(max_length=30, null=True, blank=True)  
-    image = models.CharField(max_length=30, null=True, blank=True) #filename
+    image = models.CharField(max_length=30, null=True, blank=True) # The relevant filename. 
+    ld_file = models.ForeignKey(ImageFile, null=True, blank=True)
     marked = models.CharField(max_length=30, null=True, blank=True)  
     x1 = models.IntegerField(null=True, blank=True)
     y1 = models.IntegerField(null=True, blank=True)
@@ -228,6 +288,27 @@ class Image(models.Model):
        file_array = file_array.lstrip("0")
        return file_array
 
+class EnglishTranslation(models.Model):
+    manor = models.OneToOneField(Manor)
+    text = models.TextField()
+    user = models.ForeignKey(User, null=True, blank=True)
+    user_ip = models.IPAddressField()
+    last_edited = models.DateField(auto_now=True)
+    created = models.DateField(auto_now_add=True)
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User)
+    created = models.DateField(auto_now_add=True)
+    objects = models.Manager()
+    def __unicode__(self):
+        return u'%s' % self.user
+    def get_absolute_url(self):
+        return ('profiles_profile_detail', (), { 'username': self.user.username })
+    def translations(self):
+        translations = EnglishTranslation.objects.filter(user=self.user)
+        return translations
+    get_absolute_url = models.permalink(get_absolute_url)
+    
 ################################################
 # Email addresses of interested people
 ################################################

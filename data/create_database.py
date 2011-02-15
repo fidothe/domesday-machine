@@ -3,11 +3,13 @@
 # Script to convert Domesday tab-separated files to SQL
 # BEWARE! - will OVERWRITE your existing database
 ##############################################################
-import json
+import glob
 import os
 import psycopg2
+import simplejson as json
 import sys
 import urllib2
+from PIL import Image
 from django.template.defaultfilters import slugify
 import county_dict
 import osgb
@@ -80,6 +82,7 @@ def get_places():
                continue
            values = util.line_to_values(line,9)
            id = values[0]
+           print id
            county = values[1]
            if not county: # TODO: check this
                continue
@@ -160,7 +163,7 @@ def get_placerefs():
     '''Map place IDs to manor IDs. Replaces duplicate place IDs using place mapper.'''
     print "get_placerefs()"
     # open tab file
-    fn = os.path.join(os.path.dirname(__file__), 'new_data/ByPlace For AHRC.txt')
+    fn = os.path.join(os.path.dirname(__file__), 'new_data/ByPlaceForAHRC.txt')
     f = open(fn, 'r')
     file_lines = f.readlines()
     cursor.execute('delete from domes_manor_place;')
@@ -350,13 +353,19 @@ church_codes = {
 'n': 'English nunneries', 
 None:None,
 }
+#Apart from M/F, the Gender field records two other values: blanks (783 records), which are cross-references; 
+#and dashes (630), which are institutional names. At present both are recorded as "None". Removing "None" 
+# would be OK for cross-references (Xref would be better) but wrong for institutions which - despite "None" 
+# - do map the data for those institutions if my spot checks are representative: can you label them 
+# Xref & Church respectively?
+#155860 "Durham (St Cuthbert), monks of"    "LIN"   "3,4"       "i" "a" - Ask JP about this
 gender_codes = {
 'M': 'Male',
 'm': 'Male',
 'F': 'Female',
-None:None,
+None: 'None',
+'-': 'Institution',
 'i':'i' 
-#155860 "Durham (St Cuthbert), monks of"    "LIN"   "3,4"       "i" "a" - Ask JP about this
 }
 def get_people():
     print 'get_people()'
@@ -414,7 +423,7 @@ def get_peoplenotes():
 def get_treowners():
     print "get_treowners()"
     # open tab file
-    fn = os.path.join(os.path.dirname(__file__), 'new_data/TRE For AHRC.txt')
+    fn = os.path.join(os.path.dirname(__file__), 'new_data/TREForAHRC.txt')
     f = open(fn, 'r')
     file_lines = f.readlines()
     cursor.execute('delete from domes_manor_lord66;')
@@ -500,7 +509,7 @@ None:None
 }
 def get_trwowners():
     print "get_trwowners()"
-    fn = os.path.join(os.path.dirname(__file__), 'new_data/TRW For AHRC.txt')
+    fn = os.path.join(os.path.dirname(__file__), 'new_data/TRWForAHRC.txt')
     f = open(fn, 'r')
     file_lines = f.readlines()
     cursor.execute('delete from domes_manor_lord86;')
@@ -572,7 +581,7 @@ def get_trwowners():
 ###############################
 def get_images():
     print 'get_images()'
-    fn = os.path.join(os.path.dirname(__file__), 'new_data/Images For AHRC.txt')
+    fn = os.path.join(os.path.dirname(__file__), 'new_data/ImagesForAHRC.txt')
     f = open(fn, 'r')
     file_lines = f.readlines()
     # clear any existing entries
@@ -594,32 +603,56 @@ def get_images():
             y1 = values[7]
             x2 = values[8]
             y2 = values[9]
+            ld_file = None
             # don't add entries that don't have a corresponding manor id
             sql_string = 'SELECT COUNT(*) AS COUNT FROM domes_manor WHERE structidx=' + structidx
             cursor.execute(sql_string)
             count = cursor.fetchone()[0]
             if count > 0:
-                sql_string = "INSERT INTO domes_image (manor_id,phillimore,imagesub,image,"
-                sql_string += "marked,x1,y1,x2,y2) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-                cursor.execute(sql_string, (structidx,phillimore,imagesub,image,marked,x1,y1,x2,y2))
+                sql_string = "INSERT INTO domes_image (manor_id,phillimore,imagesub,image,ld_file_id,"
+                sql_string += "marked,x1,y1,x2,y2) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                cursor.execute(sql_string, (structidx,phillimore,imagesub,image,ld_file,marked,x1,y1,x2,y2))
+    conn.commit()
+
+def get_imagefiles():
+    print 'get_imagefiles()'
+    # For each file in these three directories
+    # Create an ImageFile entry with relevant filename and county entries
+    cursor.execute('delete from domes_imagefile;')
+    for county in ['Ess','Nfk','Suf']:
+        print "----------" + county + "----------" 
+        current_dir = '/Users/anna/domesday/web/domesday/media/images/%s' % county
+        for pathAndFilename in glob.iglob(os.path.join(current_dir, '*.png')):
+            title, ext = os.path.splitext(os.path.basename(pathAndFilename)) 
+            print title, ext
+            new_filename = title.split("_")[-1] 
+            new_filename = new_filename + ext
+            if new_filename[0]=='0' and len(new_filename.split(".")[0])==3:
+                new_filename = new_filename[1:]
+            os.rename(pathAndFilename, os.path.join(current_dir, new_filename))
+            raw_width, raw_height = Image.open(pathAndFilename).size
+            sql_string = "INSERT INTO domes_imagefile (filename,county_id," + \
+                            "raw_width,raw_height,is_complete) VALUES (%s,%s,%s,%s,%s)"
+            cursor.execute(sql_string, (new_filename,county.upper(),raw_width,raw_height,False))
     conn.commit()
                 
 ###############################
 # Call all the functions...
 ###############################
 # # Get places 
-get_counties()
-get_places() 
+# get_counties()
+#get_places() 
 # get_manors() 
 # get_livestock() 
-get_placerefs() 
+#get_placerefs() 
  
 # Get images
 #get_images() 
+get_imagefiles()
 
 # Get people
-# get_people() 
-# #get_peoplenotes() # incomplete
+#get_people() 
+#get_peoplenotes() # incomplete
 # get_treowners() 
 # get_trwowners()
 

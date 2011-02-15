@@ -1,0 +1,46 @@
+{% extends "domes/base.html" %}
+{% block nav-class %}nav-about{% endblock %}
+{% block title %}Files for Cropping{% endblock %}
+{% block description %}Files for JP to edit{% endblock %}
+
+{% block content %}
+<div class="page_title">
+<h1>Files for Cropping</h1>
+</div>
+
+<div class="content">
+
+<p>Download <a href='{% url crop_results %}'>a .csv file with all coordinates</a>.</p>
+
+<h3>Essex</h3>
+<ul>
+{% for file in essex_files %}
+<li><a href="{{ file.get_absolute_url }}">{{ file }}</a>:
+{{ file.image_set.count }} tag{{ file.image_set.count|pluralize }}
+{% if file.image_set.count > 0 %}- 
+{% for image in file.image_set.all %}
+{{ image.manor.structidx }}{% if not forloop.last %}, {% endif %}
+{% endfor %}
+{% endif %}
+</li>
+{% endfor %}
+</ul>
+
+<h3>Norfolk</h3>
+<ul>
+{% for file in norfolk_files %}
+<li><a href="{{ file.get_absolute_url }}">{{ file }}</a> ({{ file.image_set.count }} tags)</li>
+{% endfor %}
+</ul>
+
+<h3>Suffolk</h3>
+<ul>
+{% for file in suffolk_files %}
+<li><a href="{{ file.get_absolute_url }}">{{ file }}</a> ({{ file.image_set.count }} tags)</li>
+{% endfor %}
+</ul>
+
+</div>
+<div style="clear: both;"></div>
+{% endblock %}
+

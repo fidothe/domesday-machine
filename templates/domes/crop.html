@@ -1,0 +1,50 @@
+{% extends "domes/base.html" %}
+{% block nav-class %}nav-about{% endblock %}
+{% block title %}Crop{% endblock %}
+{% block description %}Cropping images with jQuery{% endblock %}
+
+{% block content %}
+
+<div class="page_title">
+<h1>Cropping Images - Test</h1>
+<p>This page has {{ images_markup.count }} tag{{ images_markup.count|pluralize}}. 
+{% if images_markup.count %}
+Mouseover the image to see all tags.
+{% endif %}</p>
+<ol>
+<li>To add more tags, select an area of the image with the mouse, then enter the structidx (this must be a number) in the popup box.</li>
+<li>If you enter a structidx that does not exist, you will see an error message and the tag will not be saved.</li>
+<li>To delete a tag entered by mistake, double-click on the tag.</li>
+</ol>
+</div>
+
+<div class="content" style="min-height: 800px;">
+
+<div class="photo-column">
+  <div class="photo-container">
+		<img id="{{ image.county.short_code.title }}_{{ image.filename }}" 
+		src="{{MEDIA_URL}}images/{{ image.county.short_code.title }}/{{ image.filename }}"
+	 style="border: 1px solid black;" alt="" width="{{ image_width }}" />
+  </div>
+</div>
+
+</div>
+
+<div style="clear: both;"></div>
+
+
+<script src="{{MEDIA_URL}}js/jquery.phototagger.js"></script>
+<script language="Javascript">
+	$(document).ready(function() {
+			// Set up the photo tagger.
+			$( "div.photo-container" ).photoTagger({
+				// The API urls.
+				loadURL: "/load_tags/",
+				saveURL: "/save_tags/",
+				deleteURL: "/delete_tags/",		
+		});
+	});
+</script>
+
+{% endblock %}
+
